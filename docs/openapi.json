@@ -7,7 +7,7 @@
     "license": { "name": "MIT" }
   },
   "servers": [{ "url": "https://tu-crm.example.com" }],
-  "security": [{ "botKey": [] }],
+  "security": [{ "botKey": [] }, { "botBearer": [] }, { "botKey": [], "botOrganization": [] }, { "botBearer": [], "botOrganization": [] }],
   "paths": {
     "/api/bot/context": {
       "get": {
@@ -38,7 +38,7 @@
           "422": { "$ref": "#/components/responses/Invalido" },
           "502": { "description": "El canal (Meta o Zernio) rechazó el envío.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
         },
-        "x-codigos-409": ["ai_paused", "window_closed", "sandbox_violation", "message_limit", "no_org"]
+        "x-codigos-409": ["ai_paused", "window_closed", "sandbox_violation", "message_limit", "no_org", "org_ambiguous"]
       }
     },
     "/api/bot/profile": {
@@ -56,7 +56,7 @@
       "post": {
         "summary": "El CRM piensa por el cerebro (proxy compatible con OpenAI)",
         "description": "036 — Apunta el `base_url` de tu cliente de OpenAI a `{CRM}/api/bot/llm` con `BOT_API_KEY` como llave: el SDK llama a `/api/bot/llm/chat/completions`. El CRM reenvía el cuerpo TAL CUAL al proveedor de Ajustes → IA (o `OPENROUTER_*` de respaldo) con la llave del negocio y devuelve la respuesta del proveedor tal cual, con su código. La llave de IA nunca sale del CRM. Un 401 o 402 del proveedor pausa la llave en Ajustes → IA. Usa el modelo que dice `llm.model` del perfil.",
-        "security": [{ "botKey": [] }, { "botBearer": [] }],
+        "security": [{ "botKey": [] }, { "botBearer": [] }, { "botKey": [], "botOrganization": [] }, { "botBearer": [], "botOrganization": [] }],
         "parameters": [
           { "name": "ruta", "in": "path", "required": true, "description": "Lo que el SDK añade a su `base_url`: `chat/completions` hoy. Comodín: puede llevar `/`.", "schema": { "type": "string" }, "examples": { "chat": { "value": "chat/completions" } } }
         ],
@@ -94,7 +94,7 @@
           "409": { "description": "`ai_paused` (una persona tomó la conversación), `herramienta_apagada` (`etapa` no está en `tools`), `etapa_no_permitida` (hacia atrás, ganada o perdida; el mensaje lista las válidas) o `no_org`.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
           "422": { "description": "`etapa_desconocida` (el mensaje lista las válidas) o cuerpo inválido.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
         },
-        "x-codigos-409": ["ai_paused", "herramienta_apagada", "etapa_no_permitida", "no_org"]
+        "x-codigos-409": ["ai_paused", "herramienta_apagada", "etapa_no_permitida", "no_org", "org_ambiguous"]
       }
     },
     "/api/bot/handoff": {
@@ -230,8 +230,9 @@
   },
   "components": {
     "securitySchemes": {
-      "botKey": { "type": "apiKey", "in": "header", "name": "X-API-Key", "description": "`BOT_API_KEY` del CRM. Es también la llave con que el CRM firma el despacho." },
-      "botBearer": { "type": "http", "scheme": "bearer", "description": "036 — La misma `BOT_API_KEY`, como `Authorization: Bearer`: es lo que manda el SDK de OpenAI que apunta su `base_url` a `/api/bot/llm`. Vale en todas las rutas de `/api/bot/*`." }
+      "botKey": { "type": "apiKey", "in": "header", "name": "X-API-Key", "description": "Con X-Vocero-Organization: base64url sin relleno de HMAC-SHA256(BOT_API_KEY, 'vocero:cerebro:v1:' + organizationId). Sin esa cabecera: BOT_API_KEY tal cual, solo con un negocio; con varios devuelve 409 org_ambiguous. Ver docs/plataforma-cerebro.md." },
+      "botBearer": { "type": "http", "scheme": "bearer", "description": "La misma credencial que X-API-Key, como Authorization: Bearer. Con X-Vocero-Organization exige la credencial derivada de ese negocio. Vale en todas las rutas privadas de /api/bot/*, incluido el SDK de OpenAI para /api/bot/llm." },
+      "botOrganization": { "type": "apiKey", "in": "header", "name": "X-Vocero-Organization", "description": "Id de la organización (no slug), acompañado de su credencial derivada en X-API-Key o Bearer. Organización inexistente o credencial inválida: 401 unauthorized. Con PLATAFORMA encendida, negocio suspendido: 403 org_suspended. Presupuesto: 1200/min por negocio; sin cabecera se conserva el global heredado." }
     },
     "responses": {
       "NoEncontrada": { "description": "No existe la conversación.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },

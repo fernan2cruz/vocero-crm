@@ -18,7 +18,7 @@ import { marcarEstadoPorRespuesta } from "@/server/ai/credentials";
  *
  * Sin lista de modelos permitidos, a diferencia de cloud (spec 036, D4): allá
  * el cerebro puede ser de un tercero; aquí lo pone quien instala y entra con
- * la misma `BOT_API_KEY` que ya escribe en la bandeja. El perfil le dice qué
+ * la credencial de su negocio (o `BOT_API_KEY` en modo heredado). El perfil le dice qué
  * modelo eligió el negocio (`llm.model`).
  */
 

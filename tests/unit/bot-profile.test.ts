@@ -1,4 +1,4 @@
-﻿import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { serializeBotProfile } from "@/server/bot/profile";
 import type { schema } from "@/lib/db";
 import { resetRateLimit } from "@/lib/rate-limit";
@@ -23,7 +23,7 @@ vi.mock("@/lib/db", async (importOriginal) => {
 
 vi.mock("@/server/bot/auth", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/server/bot/auth")>();
-  return { ...actual, resolveInstanceOrg: async () => "org_1" };
+  return { ...actual, resolveBotOrg: async () => ({ ok: true, organizationId: "org_1" }) };
 });
 
 /** Perfil del agente + knowledge base vía la API de servicio `/api/bot/*`. */

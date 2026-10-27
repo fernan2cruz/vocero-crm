@@ -1,5 +1,5 @@
 import { apiError } from "@/lib/api";
-import { requireBotKey, resolveInstanceOrg } from "@/server/bot/auth";
+import { requireBotKey, resolveBotOrg } from "@/server/bot/auth";
 import { pensarPorElCerebro } from "@/server/bot/llm-proxy";
 
 export const dynamic = "force-dynamic";
@@ -21,10 +21,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ ruta: s
   const denied = requireBotKey(req);
   if (denied) return denied;
 
-  const organizationId = await resolveInstanceOrg();
-  if (!organizationId) {
-    return apiError(409, "no_org", "La instancia aún no tiene organización");
-  }
+  const org = await resolveBotOrg(req);
+  if (!org.ok) return org.response;
+  const { organizationId } = org;
 
   const { ruta } = await params;
   const r = await pensarPorElCerebro({

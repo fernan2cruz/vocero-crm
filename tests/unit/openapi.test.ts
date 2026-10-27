@@ -60,8 +60,31 @@ describe("el OpenAPI contra las rutas", () => {
     }
   });
 
+  it("cada ruta privada autentica y resuelve el negocio de la petición", () => {
+    for (const [ruta, metodos] of Object.entries(codigo)) {
+      if (ruta === "/api/bot/openapi.json" || metodos.length === 0) continue;
+      const relativa = ruta.slice("/api/bot/".length).replace(/\{ruta\}/g, "[...ruta]")
+        .replace(/\{([^}]+)\}/g, "[$1]");
+      const fuente = readFileSync(path.join(BOT, relativa, "route.ts"), "utf8");
+      expect(fuente, ruta).toContain("requireBotKey(req)");
+      expect(fuente, ruta).toContain("resolveBotOrg(req)");
+      expect(fuente, ruta).not.toContain("resolveInstanceOrg");
+    }
+  });
+
+  it("declara las dos alternativas de credencial junto con la organización", () => {
+    expect(openapi.components.securitySchemes.botOrganization).toMatchObject({
+      type: "apiKey", in: "header", name: "X-Vocero-Organization",
+    });
+    expect(openapi.security).toContainEqual({ botKey: [], botOrganization: [] });
+    expect(openapi.security).toContainEqual({ botBearer: [], botOrganization: [] });
+  });
+
   it("los 409 de /api/bot/messages son los que la ruta devuelve", () => {
-    const fuente = readFileSync(path.join(BOT, "messages", "route.ts"), "utf8");
+    // La resolución de negocio ahora concentra los errores comunes de todas
+    // las rutas; también forman parte de la respuesta pública de messages.
+    const fuente = readFileSync(path.join(BOT, "messages", "route.ts"), "utf8")
+      + readFileSync(path.join(RAIZ, "src", "server", "bot", "auth.ts"), "utf8");
     const enCodigo = [...fuente.matchAll(/apiError\(409, "([a-z_]+)"/g)].map((m) => m[1]).sort();
     const post = doc.paths["/api/bot/messages"]!.post as { "x-codigos-409": string[] };
     expect([...post["x-codigos-409"]].sort()).toEqual(enCodigo);

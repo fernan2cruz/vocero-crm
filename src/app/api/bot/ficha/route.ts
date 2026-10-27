@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb, schema } from "@/lib/db";
 import { apiError, parseBody } from "@/lib/api";
-import { requireBotKey, resolveInstanceOrg } from "@/server/bot/auth";
+import { requireBotKey, resolveBotOrg } from "@/server/bot/auth";
 import { upsertFicha } from "@/server/bot/ficha";
 
 export const dynamic = "force-dynamic";
@@ -24,10 +24,9 @@ export async function PUT(req: Request) {
   const denied = requireBotKey(req);
   if (denied) return denied;
 
-  const organizationId = await resolveInstanceOrg();
-  if (!organizationId) {
-    return apiError(409, "no_org", "La instancia aún no tiene organización");
-  }
+  const org = await resolveBotOrg(req);
+  if (!org.ok) return org.response;
+  const { organizationId } = org;
 
   const body = await parseBody(req, bodySchema);
   if (!body.ok) return body.response;

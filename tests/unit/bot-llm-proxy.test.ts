@@ -18,7 +18,7 @@ const marcarEstadoPorRespuesta = vi.hoisted(() => vi.fn(async () => true));
 vi.mock("@/server/ai/credentials", () => ({ marcarEstadoPorRespuesta }));
 vi.mock("@/server/bot/auth", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/server/bot/auth")>()),
-  resolveInstanceOrg: async () => "org_1",
+  resolveBotOrg: async () => ({ ok: true, organizationId: "org_1" }),
 }));
 
 import { POST } from "@/app/api/bot/llm/[...ruta]/route";

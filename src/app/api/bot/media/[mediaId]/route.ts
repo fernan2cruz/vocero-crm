@@ -1,5 +1,5 @@
 import { apiError } from "@/lib/api";
-import { requireBotKey, resolveInstanceOrg } from "@/server/bot/auth";
+import { requireBotKey, resolveBotOrg } from "@/server/bot/auth";
 import { getCredentialsByOrg } from "@/server/whatsapp/credentials";
 import { downloadGraphMedia, MediaFetchError } from "@/server/whatsapp/media";
 
@@ -22,10 +22,9 @@ export async function GET(
   const denied = requireBotKey(req);
   if (denied) return denied;
 
-  const organizationId = await resolveInstanceOrg();
-  if (!organizationId) {
-    return apiError(409, "no_org", "La instancia aún no tiene organización");
-  }
+  const org = await resolveBotOrg(req);
+  if (!org.ok) return org.response;
+  const { organizationId } = org;
   const creds = await getCredentialsByOrg(organizationId);
   if (!creds) {
     return apiError(409, "no_connection", "WhatsApp no está conectado");

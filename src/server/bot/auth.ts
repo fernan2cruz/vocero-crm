@@ -1,8 +1,12 @@
 import { timingSafeEqual } from "node:crypto";
+import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { apiError } from "@/lib/api";
 import { checkRateLimit, clientIp } from "@/lib/rate-limit";
 import { markBotSeen } from "@/server/bot/status";
+import { credencialValida } from "@/server/bot/org-credential";
+import { plataformaEnabled } from "@/server/platform/flag";
+import { estadoDeNegocio } from "@/server/platform/estado";
 
 /**
  * Autenticación de la API de servicio `/api/bot/*`.
@@ -10,8 +14,9 @@ import { markBotSeen } from "@/server/bot/status";
  * Esta superficie NO la consume el navegador: la consume un cerebro externo
  * (un microservicio propio del operador, en su mismo servidor) que quiere
  * conducir la conversación sin que el token de WhatsApp salga del CRM.
- * Header `X-API-Key` (o `Authorization: Bearer`) contra `BOT_API_KEY` (env),
- * comparación en tiempo constante. Sin `BOT_API_KEY` configurada, toda la superficie responde 401.
+ * Con X-Vocero-Organization exige la credencial derivada de ese negocio;
+ * sin ella conserva BOT_API_KEY heredada. Ambas se comparan en tiempo
+ * constante. Sin BOT_API_KEY configurada, toda la superficie responde 401.
  *
  * Primero se autentica y DESPUÉS se cuenta. Antes había un solo cubo global
  * contado antes de mirar la key: 600 requests anónimos por minuto dejaban al
@@ -60,7 +65,12 @@ function llaveDe(req: Request): string | null {
 }
 
 export function requireBotKey(req: Request): Response | null {
-  if (!validBotKey(llaveDe(req))) {
+  const organizationId = req.headers.get("x-vocero-organization");
+  const provided = llaveDe(req);
+  const valid = organizationId !== null
+    ? isBotKeyConfigured() && provided !== null && credencialValida(process.env.BOT_API_KEY!, organizationId, provided)
+    : validBotKey(provided);
+  if (!valid) {
     const ip = clientIp(req.headers);
     const fails = checkRateLimit(`bot-api-fail:${ip}`, BOT_AUTH_FAILURES);
     return fails.allowed
@@ -70,8 +80,9 @@ export function requireBotKey(req: Request): Response | null {
   // «Quién responde»: la única huella que deja el cerebro externo en el CRM.
   // Se marca al autenticar, antes del presupuesto: un cerebro frenado por 429
   // sigue siendo el que contesta.
-  markBotSeen();
-  const rl = checkRateLimit("bot-api", BOT_API_BUDGET);
+  if (organizationId !== null) markBotSeen(organizationId);
+  else markBotSeen();
+  const rl = checkRateLimit(organizationId !== null ? `bot-api:${organizationId}` : "bot-api", BOT_API_BUDGET);
   if (!rl.allowed) return apiError(429, "rate_limited", "Demasiadas solicitudes");
   return null;
 }
@@ -84,24 +95,35 @@ function validBotKey(provided: string | null): boolean {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-/**
- * Organización única de la instancia (self-hosted, un negocio). Cacheada en
- * memoria: la instancia jamás cambia de organización en runtime.
- */
-let cachedOrgId: string | null = null;
-
-export async function resolveInstanceOrg(): Promise<string | null> {
-  if (cachedOrgId) return cachedOrgId;
+/** Se llama después de requireBotKey: jamás elegimos un negocio arbitrario.
+ * Sin caché: el superadmin puede dar de alta otro negocio en runtime. */
+export async function resolveBotOrg(req: Request): Promise<
+  { ok: true; organizationId: string } | { ok: false; response: Response }
+> {
   const db = getDb();
-  const rows = await db
-    .select({ id: schema.organization.id })
-    .from(schema.organization)
-    .limit(1);
-  cachedOrgId = rows[0]?.id ?? null;
-  return cachedOrgId;
+  const indicada = req.headers.get("x-vocero-organization");
+  // organization es el catálogo de Better Auth, sin columna organization_id.
+  const consulta = db.select({ id: schema.organization.id }).from(schema.organization);
+  const rows = indicada !== null
+    ? await consulta.where(eq(schema.organization.id, indicada)).limit(1)
+    : await consulta.limit(2);
+  if (indicada !== null && !rows[0]) {
+    return { ok: false, response: apiError(401, "unauthorized", "No autorizado") };
+  }
+  if (!rows[0]) {
+    return { ok: false, response: apiError(409, "no_org", "La instancia aún no tiene organización") };
+  }
+  if (indicada === null && rows.length > 1) {
+    return { ok: false, response: apiError(409, "org_ambiguous", "Con varios negocios, indica X-Vocero-Organization") };
+  }
+  const organizationId = rows[0].id;
+  if (plataformaEnabled() && await estadoDeNegocio(organizationId) === "suspended") {
+    return { ok: false, response: apiError(403, "org_suspended", "Negocio suspendido") };
+  }
+  // En el modo heredado solo ahora conocemos a qué negocio atribuir la llamada.
+  markBotSeen(organizationId);
+  return { ok: true, organizationId };
 }
 
-/** Solo para tests. */
-export function resetInstanceOrgCache(): void {
-  cachedOrgId = null;
-}
+/** Compatibilidad con los tests anteriores: ya no existe caché permanente. */
+export function resetInstanceOrgCache(): void {}
