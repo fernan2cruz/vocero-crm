@@ -304,7 +304,9 @@ export function AiClient() {
               </select>
               <p className="text-xs text-muted-foreground">
                 {preset.baseUrl
-                  ? `Habla con ${preset.baseUrl}. Una sola llave da acceso a los modelos de todos los laboratorios.`
+                  ? provider === "deepseek"
+                    ? `Habla con ${preset.baseUrl}. Modelos: deepseek-chat (rápido y barato) o deepseek-reasoner (razona más).`
+                    : `Habla con ${preset.baseUrl}. Una sola llave da acceso a los modelos de todos los laboratorios.`
                   : "Cualquier API con la forma de la de OpenAI: OpenAI, Groq, Together, un servidor propio…"}
               </p>
             </div>
@@ -487,6 +489,28 @@ function AyudaLlave({ provider }: { provider: AiProviderId }) {
             → Create key y copia la llave.
           </li>
           <li>Pégala aquí, pulsa «Probar conexión» y luego «Guardar».</li>
+        </ol>
+      ) : provider === "deepseek" ? (
+        <ol className="mt-3 list-decimal space-y-2 pl-5 text-muted-foreground">
+          <li>
+            Crea una cuenta en{" "}
+            <a className="underline" href="https://platform.deepseek.com" target="_blank" rel="noopener noreferrer">
+              platform.deepseek.com
+            </a>{" "}
+            y carga saldo en Top up.
+          </li>
+          <li>
+            Abre{" "}
+            <a className="underline" href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener noreferrer">
+              API keys
+            </a>{" "}
+            → Create new API key y copia la llave.
+          </li>
+          <li>
+            Escribe el modelo (<code className="font-mono">deepseek-chat</code> o{" "}
+            <code className="font-mono">deepseek-reasoner</code>), pega la llave,
+            pulsa «Probar conexión» y luego «Guardar».
+          </li>
         </ol>
       ) : (
         <ol className="mt-3 list-decimal space-y-2 pl-5 text-muted-foreground">

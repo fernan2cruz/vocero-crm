@@ -1,102 +1,21 @@
-import { desc, eq, inArray, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { apiError, parseBody, withAuth } from "@/lib/api";
 import { getDb, schema } from "@/lib/db";
 import { newId } from "@/lib/db/ids";
-import { scoped } from "@/lib/db/tenant";
 import { normalizeMx } from "@/lib/meta/client";
-import { digitsOnly, normalizeText } from "@/lib/search";
 import { serializeContact } from "@/server/contacts";
+import { listContacts } from "@/server/contacts-list";
 import { createLeadForContact } from "@/server/inbox/lead-activity";
 
 export const dynamic = "force-dynamic";
 
-/**
- * Búsqueda tolerante en SQL, espejo de `matchesQuery` del cliente:
- * - nombre sin acentos ni mayúsculas (`translate`, sin depender de la
- *   extensión `unaccent`, que exigiría privilegios en la BD);
- * - teléfono por DÍGITOS, para poder teclearlo como se ve ("+52 555 000…").
- */
-const UNACCENT_FROM = "áàäâãéèëêíìïîóòöôõúùüûñçÁÀÄÂÃÉÈËÊÍÌÏÎÓÒÖÔÕÚÙÜÛÑÇ";
-const UNACCENT_TO = "aaaaaeeeeiiiiooooouuuuncAAAAAEEEEIIIIOOOOOUUUUNC";
-
+/** Los filtros y el límite viven en `listContacts` (la exportación usa la misma). */
 export const GET = withAuth(async (session, req: Request) => {
-  const url = new URL(req.url);
-  const q = url.searchParams.get("q")?.trim();
-  const stage = url.searchParams.get("stage")?.trim();
-  const includeArchived = url.searchParams.get("archived") === "true";
-
-  const db = getDb();
-
-  // Etapa de cada contacto en una consulta aparte: una subconsulta
-  // correlacionada aquí choca con el `id` de `lead` ("column reference id is
-  // ambiguous"), y un join duplicaría contactos con más de un lead.
-  const leadStages = await db
-    .select({
-      contactId: schema.lead.contactId,
-      stageName: schema.pipelineStage.name,
-      priority: schema.lead.priority,
-    })
-    .from(schema.lead)
-    .innerJoin(
-      schema.pipelineStage,
-      eq(schema.pipelineStage.id, schema.lead.stageId)
-    )
-    .where(scoped(schema.lead.organizationId, session.organizationId));
-  const stageByContact = new Map(
-    leadStages.map((r) => [r.contactId, r.stageName])
+  const params = new URL(req.url).searchParams;
+  const items = await listContacts(session.organizationId, params, 200);
+  const contacts = items.map(({ row, stageName, priority, tags, valor, esCliente }) =>
+    serializeContact(row, stageName, priority, false, tags, valor, esCliente)
   );
-  const priorityByContact = new Map(
-    leadStages.map((r) => [r.contactId, r.priority])
-  );
-
-  const qDigits = q ? digitsOnly(q) : "";
-  // El patrón viaja normalizado igual que la columna, y con los comodines de
-  // LIKE escapados para que un "%" tecleado no liste todo.
-  const qLike = q ? normalizeText(q).replace(/[\\%_]/g, "\\$&") : "";
-  const search =
-    q && q.length > 0
-      ? or(
-          sql`lower(translate(${schema.contact.name}, ${UNACCENT_FROM}, ${UNACCENT_TO}))
-              like ${`%${qLike}%`}`,
-          // Un dígito suelto barrería el directorio entero: mínimo 3.
-          qDigits.length >= 3
-            ? sql`regexp_replace(coalesce(${schema.contact.phone}, ''), '\\D', '', 'g')
-                  like ${`%${qDigits}%`}`
-            : undefined
-        )
-      : undefined;
-
-  // El filtro de etapa se aplica ANTES del límite: si no, un contacto de la
-  // etapa buscada podría quedar fuera por el corte de 200.
-  const stageContactIds = stage
-    ? leadStages.filter((r) => r.stageName === stage).map((r) => r.contactId)
-    : null;
-  if (stageContactIds?.length === 0) return Response.json({ contacts: [] });
-
-  const rows = await db
-    .select()
-    .from(schema.contact)
-    .where(
-      scoped(
-        schema.contact.organizationId,
-        session.organizationId,
-        search,
-        stageContactIds ? inArray(schema.contact.id, stageContactIds) : undefined
-      )
-    )
-    .orderBy(desc(schema.contact.updatedAt))
-    .limit(200);
-
-  const contacts = rows
-    .filter((c) => includeArchived || !c.archivedAt)
-    .map((c) =>
-      serializeContact(
-        c,
-        stageByContact.get(c.id) ?? null,
-        priorityByContact.get(c.id) ?? null
-      )
-    );
   return Response.json({ contacts });
 });
 

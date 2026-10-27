@@ -150,6 +150,12 @@ export type ContactDto = {
   ficha?: FichaDto;
   /** 027 — El agente no le responde a esta persona: la atiende el dueño. */
   aiPaused?: boolean;
+  /** 064 — Etiquetas del negocio pegadas a este contacto. */
+  tags?: import("@/lib/contact-tags").ContactTagDto[];
+  /** 064 — Valor del cliente: suma de sus ventas y cuántas veces compró. */
+  valor?: import("@/server/contact-sales").ContactValueDto | null;
+  /** 064 — Compró alguna vez o su trato está ganado. */
+  esCliente?: boolean;
 };
 
 /* ============================================================

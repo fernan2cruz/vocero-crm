@@ -3,15 +3,25 @@ import { getDb, schema } from "@/lib/db";
 import { scoped } from "@/lib/db/tenant";
 import { effectiveSource } from "@/server/contact-source";
 import type { FichaDto, PriorityValue } from "@/lib/types";
+import type { ContactTagDto } from "@/lib/contact-tags";
+import type { ContactValueDto } from "@/server/contact-sales";
 
 export function serializeContact(
   c: typeof schema.contact.$inferSelect,
   stageName: string | null = null,
   priority: PriorityValue | null = null,
   /** 018: si llegó por un anuncio, la fuente no capturada se deduce "anuncio". */
-  llegoPorAnuncio = false
+  llegoPorAnuncio = false,
+  /** 064: etiquetas del contacto (la lista las trae en lote). */
+  tags: ContactTagDto[] = [],
+  /** 064: valor del cliente (de sus ventas) y si cuenta como cliente. */
+  valor: ContactValueDto | null = null,
+  esCliente = false
 ) {
   return {
+    tags,
+    valor,
+    esCliente,
     id: c.id,
     name: c.name,
     phone: c.phone,

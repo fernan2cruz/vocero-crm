@@ -64,6 +64,8 @@ describe("URLs del proveedor", () => {
   it("reconoce el preset por la base URL", () => {
     expect(presetDeBaseUrl("https://openrouter.ai/api")).toBe("openrouter");
     expect(presetDeBaseUrl("https://openrouter.ai/api/v1/")).toBe("openrouter");
+    expect(presetDeBaseUrl("https://api.deepseek.com")).toBe("deepseek");
+    expect(presetDeBaseUrl("https://api.deepseek.com/v1/")).toBe("deepseek");
     expect(presetDeBaseUrl("https://api.openai.com")).toBe("openai_compatible");
   });
 

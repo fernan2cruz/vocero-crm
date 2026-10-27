@@ -1168,7 +1168,9 @@ export const aiCredentials = pgTable(
       .notNull()
       .references(() => organization.id, { onDelete: "cascade" }),
     /** Preset de la UI; `base_url` es lo que de verdad identifica al proveedor. */
-    provider: text("provider", { enum: ["openrouter", "openai_compatible"] })
+    provider: text("provider", {
+      enum: ["openrouter", "deepseek", "openai_compatible"],
+    })
       .notNull()
       .default("openrouter"),
     baseUrl: text("base_url").notNull(),
@@ -1393,5 +1395,177 @@ export const conversationNote = pgTable(
   },
   (t) => [
     index("conversation_note_conv_idx").on(t.organizationId, t.conversationId, t.createdAt),
+  ]
+);
+
+/**
+ * 064 — Etiquetas de contacto. Las define el negocio (nombre + color) y se
+ * pegan a cualquier número de contactos. La unicidad por nombre ignora
+ * mayúsculas: «VIP» y «vip» serían la misma etiqueta con dos grafías.
+ */
+export const contactTag = pgTable(
+  "contact_tag",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    color: text("color", {
+      enum: ["gris", "azul", "verde", "ambar", "rojo", "violeta"],
+    })
+      .notNull()
+      .default("gris"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("contact_tag_org_name_uq").on(
+      t.organizationId,
+      sql`lower(${t.name})`
+    ),
+  ]
+);
+
+export const contactTagLink = pgTable(
+  "contact_tag_link",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    contactId: text("contact_id")
+      .notNull()
+      .references(() => contact.id, { onDelete: "cascade" }),
+    tagId: text("tag_id")
+      .notNull()
+      .references(() => contactTag.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("contact_tag_link_uq").on(t.contactId, t.tagId),
+    index("contact_tag_link_org_tag_idx").on(t.organizationId, t.tagId),
+  ]
+);
+
+/**
+ * 064 — Segmentos: un filtro de la lista de contactos guardado con nombre.
+ * `filters` es el mismo conjunto que entiende `GET /api/contacts`
+ * (`stage`, `tag`, `source`, `ai`, `q`); guardar el filtro y no la lista de
+ * ids hace que el segmento se mantenga solo cuando entra gente nueva.
+ */
+export const contactSegment = pgTable(
+  "contact_segment",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    filters: jsonb("filters").$type<Record<string, string>>().notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("contact_segment_org_idx").on(t.organizationId, t.createdAt)]
+);
+
+/**
+ * 064 — Libro de ventas por contacto. Cada fila es una compra o venta cerrada
+ * (monto en CENTAVOS ENTEROS, en la moneda del negocio al registrarla).
+ *
+ * Existe porque el lead guarda UN monto y la bitácora de etapas no guarda
+ * montos: sin este libro no hay forma honesta de sumar lo que un cliente ha
+ * comprado ni de contar cuántas veces compró. El valor del cliente y la
+ * recurrencia se DERIVAN de aquí; nunca se guardan como campo.
+ */
+export const contactSale = pgTable(
+  "contact_sale",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    contactId: text("contact_id")
+      .notNull()
+      .references(() => contact.id, { onDelete: "cascade" }),
+    amountCents: integer("amount_cents").notNull(),
+    currency: text("currency").notNull(),
+    note: text("note"),
+    /** Cuándo OCURRIÓ la venta (puede ser anterior a cuando se registró). */
+    occurredAt: timestamp("occurred_at").notNull().defaultNow(),
+    createdByUserId: text("created_by_user_id").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("contact_sale_org_contact_idx").on(t.organizationId, t.contactId, t.occurredAt),
+    check("contact_sale_amount_ck", sql`${t.amountCents} > 0`),
+  ]
+);
+
+/**
+ * 064 — Campañas: una plantilla APROBADA de WhatsApp enviada a un segmento.
+ *
+ * Los destinatarios se CONGELAN al crearla (`campaign_recipient`): lo que el
+ * dueño revisó y confirmó es exactamente a quién se escribe, aunque entre
+ * gente nueva al segmento mientras tanto. Cada destinatario se envía una sola
+ * vez (unicidad campaña+contacto y solo se toman los `pending`), así que
+ * reanudar tras un corte jamás repite un mensaje.
+ */
+export const campaign = pgTable(
+  "campaign",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    templateId: text("template_id")
+      .notNull()
+      .references(() => template.id),
+    /** Valores de {{1}}..{{n}}; admiten `{nombre}` (el primer nombre). */
+    variables: jsonb("variables").$type<string[]>().notNull(),
+    /** El filtro con el que se armó la lista (para mostrar de dónde salió). */
+    filters: jsonb("filters").$type<Record<string, string>>().notNull(),
+    status: text("status", {
+      enum: ["draft", "sending", "done", "cancelled"],
+    })
+      .notNull()
+      .default("draft"),
+    createdByUserId: text("created_by_user_id").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    startedAt: timestamp("started_at"),
+    finishedAt: timestamp("finished_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("campaign_org_created_idx").on(t.organizationId, t.createdAt)]
+);
+
+export const campaignRecipient = pgTable(
+  "campaign_recipient",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    campaignId: text("campaign_id")
+      .notNull()
+      .references(() => campaign.id, { onDelete: "cascade" }),
+    contactId: text("contact_id")
+      .notNull()
+      .references(() => contact.id, { onDelete: "cascade" }),
+    status: text("status", {
+      enum: ["pending", "sent", "failed", "skipped"],
+    })
+      .notNull()
+      .default("pending"),
+    /** Por qué falló u se omitió (texto para el dueño). */
+    detail: text("detail"),
+    sentAt: timestamp("sent_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("campaign_recipient_uq").on(t.campaignId, t.contactId),
+    index("campaign_recipient_status_idx").on(t.campaignId, t.status),
   ]
 );

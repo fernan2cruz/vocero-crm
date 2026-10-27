@@ -10,7 +10,9 @@
 
 export const OPENROUTER_BASE_URL = "https://openrouter.ai/api";
 
-export const AI_PROVIDERS = ["openrouter", "openai_compatible"] as const;
+export const DEEPSEEK_BASE_URL = "https://api.deepseek.com";
+
+export const AI_PROVIDERS = ["openrouter", "deepseek", "openai_compatible"] as const;
 export type AiProviderId = (typeof AI_PROVIDERS)[number];
 
 export const AI_STATUSES = [
@@ -37,6 +39,13 @@ export const AI_PROVIDER_PRESETS: Record<AiProviderId, AiProviderPreset> = {
     modelPlaceholder: "anthropic/claude-sonnet-4.5",
     tokenPlaceholder: "sk-or-…",
   },
+  deepseek: {
+    id: "deepseek",
+    label: "DeepSeek",
+    baseUrl: DEEPSEEK_BASE_URL,
+    modelPlaceholder: "deepseek-chat",
+    tokenPlaceholder: "sk-…",
+  },
   openai_compatible: {
     id: "openai_compatible",
     label: "Otro compatible con OpenAI",
@@ -54,9 +63,10 @@ export const AI_STATUS_LABEL: Record<AiStatus, string> = {
 
 /** A qué preset corresponde una base URL (la del entorno o una guardada). */
 export function presetDeBaseUrl(baseUrl: string): AiProviderId {
-  return apiRoot(baseUrl) === apiRoot(OPENROUTER_BASE_URL)
-    ? "openrouter"
-    : "openai_compatible";
+  const raiz = apiRoot(baseUrl);
+  if (raiz === apiRoot(OPENROUTER_BASE_URL)) return "openrouter";
+  if (raiz === apiRoot(DEEPSEEK_BASE_URL)) return "deepseek";
+  return "openai_compatible";
 }
 
 /**
