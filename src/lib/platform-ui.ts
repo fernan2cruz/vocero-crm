@@ -1,3 +1,27 @@
+export function formatearDuracion(seg: number | null): string {
+  if (seg === null || !Number.isFinite(seg) || seg < 0) return "—";
+  const s = Math.round(seg);
+  if (s < 60) return `${s} s`;
+  if (s < 3600) return `${Math.floor(s / 60)} min${s % 60 ? ` ${s % 60} s` : ""}`;
+  return `${Math.floor(s / 3600)} h${Math.floor(s % 3600 / 60) ? ` ${Math.floor(s % 3600 / 60)} min` : ""}`;
+}
+
+export function etiquetaRiesgo(motivo: "sin_credito" | "credito_bajo" | "agente_apagado" | "webhooks_agotados" | "suspendido" | "cerebro_sin_senal"): string {
+  return { sin_credito: "Sin crédito", credito_bajo: "Crédito bajo", agente_apagado: "Agente apagado", webhooks_agotados: "Webhooks agotados", suspendido: "Suspendido", cerebro_sin_senal: "Cerebro sin señal" }[motivo];
+}
+
+export function proporcion(valor: number, max: number): number {
+  return !Number.isFinite(valor) || !Number.isFinite(max) || max <= 0 ? 0 : Math.min(100, Math.max(0, valor / max * 100));
+}
+
+export type ParametrosPagina = Record<string, string | string[] | undefined>;
+/** Solo escalares no vacíos; resolverPeriodo valida fechas y límites. */
+export function parametrosDePeriodo(searchParams: ParametrosPagina): { from?: string; to?: string; days?: number } {
+  const texto = (clave: string) => typeof searchParams[clave] === "string" ? searchParams[clave].trim() || undefined : undefined;
+  const from = texto("from"), to = texto("to"), days = texto("days");
+  return { ...(from ? { from } : {}), ...(to ? { to } : {}), ...(days ? { days: Number(days) } : {}) };
+}
+
 export function etiquetaEstado(estado: "active" | "suspended" | "disabled"): string {
   return { active: "Activo", suspended: "Suspendido", disabled: "Desactivado" }[estado];
 }

@@ -16,9 +16,9 @@ import { mensajeError, peticion } from "./peticion";
 import { CreditoNegocio, type CreditoNegocioProps } from "./credito-negocio";
 import { LlaveIa, type VistaLlave } from "./llave-ia";
 
-export function NegocioClient({ negocio, usuarios, credito, llave }: {
+export function NegocioClient({ negocio, usuarios, credito, llave, informes }: {
   negocio: NonNullable<Awaited<ReturnType<typeof obtenerNegocio>>>; usuarios: UsuarioPortal[];
-  credito: CreditoNegocioProps; llave: VistaLlave;
+  credito: CreditoNegocioProps; llave: VistaLlave; informes: React.ReactNode;
 }) {
   const router = useRouter();
   const [confirmando, setConfirmando] = useState(false);
@@ -52,6 +52,7 @@ export function NegocioClient({ negocio, usuarios, credito, llave }: {
       </form>
     </CardContent></Card>
     <CreditoNegocio {...credito} />
+    {informes}
     <LlaveIa titulo="Llave de IA del negocio" ruta={`${ruta}/ai-key`} inicial={llave} revocable />
     <section className="space-y-3"><h2 className="text-lg font-semibold">Usuarios del negocio</h2><ListaUsuarios usuarios={usuarios} /></section>
     {confirmando && <ConfirmarConMotivo titulo={suspendido ? "Reactivar" : "Suspender"} conMotivo={!suspendido}
