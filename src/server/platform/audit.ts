@@ -12,6 +12,8 @@ export type PlatformAction =
   | "org.suspend"
   | "org.reactivate"
   | "credit.adjust"
+  | "credit.low"
+  | "credit.depleted"
   | "ai_key.set"
   | "ai.mode"
   | "ai.price"

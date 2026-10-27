@@ -2,6 +2,7 @@ import { getDb, schema } from "@/lib/db";
 import { plataformaEnabled } from "@/server/platform/flag";
 import { scoped } from "@/lib/db/tenant";
 import { estadoIaDe, mensajeDeEstado } from "@/lib/ai/provider";
+import { avisoCreditoDe } from "@/server/platform/credito-estado";
 
 /**
  * ¿Hay que avisarle al dueño de que su agente no puede contestar?
@@ -20,7 +21,8 @@ export type AvisoIa = { mensaje: string; accion: string } | null;
 
 export async function avisoIaDe(organizationId: string): Promise<AvisoIa> {
   const estado = await estadoIaDe(organizationId);
-  if (estado.activa) return null;
+  // Sin plataforma no hay crédito que vigilar: el camino de siempre, sin consultas extra.
+  if (estado.activa && !plataformaEnabled()) return null;
 
   const db = getDb();
   const filas = await db
@@ -29,6 +31,14 @@ export async function avisoIaDe(organizationId: string): Promise<AvisoIa> {
     .where(scoped(schema.agentProfile.organizationId, organizationId))
     .limit(1);
   if (!filas[0]?.enabled) return null;
+
+  if (estado.activa) {
+    // 065 B: con IA de plataforma, avisar ANTES de que se agote el crédito.
+    const credito = await avisoCreditoDe(organizationId);
+    return credito?.estado === "bajo"
+      ? { mensaje: credito.mensaje, accion: "Contactar a quien administra la plataforma" }
+      : null;
+  }
 
   const mensaje = mensajeDeEstado(estado);
   if (!mensaje) return null;

@@ -9,6 +9,7 @@ import type { AiProvider } from "@/lib/ai/provider";
 import { plataformaEnabled } from "@/server/platform/flag";
 import { moverSaldo } from "@/server/platform/credit";
 import { auditar } from "@/server/platform/audit";
+import { acreditadoDe, estadoDeCredito } from "@/server/platform/credito-estado";
 import { precioIaSchema } from "@/server/platform/schemas";
 
 const tokens = z.number().int().min(0).max(2_147_483_647);
@@ -69,6 +70,21 @@ export function extraerUso(cuerpo: unknown, contentType: string): UsoIa | null {
   } catch { return null; }
 }
 
+/** Fuera de la transacción del cobro: una alerta que falle jamás deshace un consumo ya cobrado. */
+async function alertarCredito(organizationId: string, saldoDespues: number, costMicros: number): Promise<void> {
+  try {
+    const acreditado = await acreditadoDe(organizationId);
+    const antes = estadoDeCredito(saldoDespues + costMicros, acreditado);
+    const despues = estadoDeCredito(saldoDespues, acreditado);
+    // Una sola alerta por cruce: el saldo se mueve bajo bloqueo de fila, solo un cobro cruza.
+    if (antes === despues || despues === "ok") return;
+    await auditar({ actorUserId: null, action: despues === "agotado" ? "credit.depleted" : "credit.low",
+      organizationId, targetUserId: null, detail: { balanceAfter: saldoDespues } });
+  } catch {
+    console.error("[platform] No se pudo registrar la alerta de crédito");
+  }
+}
+
 export async function registrarUso(input: { organizationId: string; source: "bot" | "lab" | "judge"; model: string; uso: UsoIa; cobrar: boolean }): Promise<void> {
   if (!plataformaEnabled()) return;
   try {
@@ -77,6 +93,7 @@ export async function registrarUso(input: { organizationId: string; source: "bot
     const [precio] = input.uso.costoUsd === undefined
       ? await db.select().from(schema.aiModelPrice).where(eq(schema.aiModelPrice.model, modelo)).limit(1) : [];
     const costMicros = costoDeUso({ ...input.uso, costoReportadoUsd: input.uso.costoUsd, precio });
+    let saldoDespues: number | null = null;
     await db.transaction(async (tx) => {
       const id = newId("aiUsage");
       if (input.cobrar && costMicros > 0) {
@@ -85,11 +102,13 @@ export async function registrarUso(input: { organizationId: string; source: "bot
         await tx.insert(schema.aiCreditLedger).values({ id: newId("aiCreditLedger"),
           organizationId: input.organizationId, kind: "usage", amountMicros: -costMicros,
           balanceAfter, ref: id });
+        saldoDespues = balanceAfter;
       }
       await tx.insert(schema.aiUsage).values({ id, organizationId: input.organizationId,
         source: input.source, model: modelo, promptTokens: input.uso.promptTokens,
         completionTokens: input.uso.completionTokens, costMicros });
     });
+    if (saldoDespues !== null) await alertarCredito(input.organizationId, saldoDespues, costMicros);
   } catch {
     // No incluir el error del driver: puede contener SQL, valores o secretos.
     console.error("[platform] No se pudo registrar el consumo de IA");

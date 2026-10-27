@@ -78,7 +78,8 @@ export function urlConFiltros(filtros: { q?: string; organizationId?: string }):
 export const accionesPlataforma = {
   "platform.admin.grant": "Otorgar superadmin", "platform.admin.revoke": "Retirar superadmin",
   "org.create": "Crear negocio", "org.suspend": "Suspender negocio", "org.reactivate": "Reactivar negocio",
-  "credit.adjust": "Ajustar crédito", "ai_key.set": "Guardar llave de IA", "ai_key.revoke": "Revocar llave de IA",
+  "credit.adjust": "Ajustar crédito", "credit.low": "Crédito de IA bajo", "credit.depleted": "Crédito de IA agotado",
+  "ai_key.set": "Guardar llave de IA", "ai_key.revoke": "Revocar llave de IA",
   "ai.mode": "Cambiar modo de IA", "ai.price": "Cambiar precio de IA", "session.revoke": "Cerrar sesiones",
   "user.disable": "Desactivar usuario", "user.enable": "Reactivar usuario", "user.role": "Cambiar rol",
   "user.password_reset": "Reiniciar contraseña", "org.notes": "Editar notas del negocio",
@@ -100,6 +101,8 @@ export function resumenDetalle(accion: string, detail: unknown): string {
     if (typeof d.from === "string" && typeof d.to === "string") partes.push(`${etiquetaRol(d.from)} → ${etiquetaRol(d.to)}`);
   } else if (accion === "credit.adjust") {
     monto("amountMicros", "Monto"); monto("balanceAfter", "Saldo después");
+  } else if (accion === "credit.low" || accion === "credit.depleted") {
+    monto("balanceAfter", "Saldo");
   } else if (accion === "session.revoke") {
     if (typeof d.n === "number" && Number.isSafeInteger(d.n) && d.n >= 0) partes.push(`${d.n} sesiones cerradas`);
     if (d.scope === "user" || d.scope === "org" || d.scope === "session") partes.push(`Alcance: ${d.scope === "user" ? "usuario" : d.scope === "org" ? "negocio" : "sesión"}`);
