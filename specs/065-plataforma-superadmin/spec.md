@@ -111,18 +111,104 @@ cree, ni quien vea cuánto gastan, ni quien pause un agente que se desbocó.
   crédito total y los negocios en riesgo (saldo bajo, agente apagado, cerebro
   caído, webhooks agotados).
 
+## Alcance ampliado (2026-10-27, segunda indicación)
+
+El dueño precisó: el superadmin responde por **los tenants, sus usuarios, la
+gestión de cada tenant, las llaves de IA de cada tenant, los accesos, los logs
+y la seguridad**, para **no tener que desplegar una instancia por cliente**:
+una sola plataforma escalable. Eso añade:
+
+- **PL-8 · Llaves de IA por negocio.** El superadmin fija, rota, prueba y
+  revoca la llave de IA de cada negocio (`ai_credentials`, ya cifrada) y elige
+  su modo (`own_key`/`platform`). Gestionar NO es ver: la llave nunca se
+  muestra ni se devuelve, solo sus últimos 4 (S-5). «Probar conexión» reusa la
+  sonda existente. Cada cambio queda en `platform_audit`.
+- **PL-9 · Accesos.** Por negocio: usuarios y roles (`owner`/`admin`/`member`),
+  sesiones activas (de la tabla `session`: IP, navegador, vencimiento), cerrar
+  la sesión de un usuario o de todo un negocio, forzar cambio de contraseña y
+  desactivar. Historial de inicios de sesión en una tabla nueva `login_event`
+  (éxito/fallo, IP, navegador, motivo): Better Auth no guarda historial.
+- **PL-10 · Logs y seguridad.** Bitácora de auditoría consultable (por negocio,
+  actor, acción y fechas) y exportable; eventos de seguridad (fallos de acceso
+  repetidos, cambios de llave, suspensiones, nuevos superadmin); salud
+  operativa por negocio (webhooks agotados, despachos fallidos, errores del
+  cerebro, conexión de WhatsApp, de `webhook_event` y `dispatch`); acciones de
+  emergencia (cerrar todas las sesiones, suspender, apagar el agente). El
+  propio superadmin se protege: reconfirmar contraseña para acciones
+  destructivas, sesión de plataforma corta y, después, 2FA obligatoria y
+  lista de IPs.
+- **PL-11 · Una plataforma, muchos negocios.** Hay tres supuestos de «un negocio
+  por instancia» que revisar antes de prometer escala:
+  1. **Alta**: el registro público y la siembra (`registration.ts`,
+     `on-signup.ts`) asumen un solo negocio → el alta pasa al superadmin (PL-1).
+  2. **El cerebro** (el más grande): `BRAIN_DISPATCH_URL` y `BOT_API_KEY` son
+     globales y `/api/bot/*` no sabe de qué negocio habla. Hace falta una
+     credencial y una ruta por negocio. El precedente es el contrato de Nea
+     en modo cloud (`vocero:cerebro:v1`: credencial derivada por
+     organización). Es un trabajo de diseño propio (rebanada S2b).
+  3. **Webhooks**: el de WhatsApp YA enruta por `phone_number_id` (✓); el
+     segmento secreto es uno por plataforma, aceptable con una app de Meta
+     compartida. Instagram, Messenger y TikTok se verifican al llegar ahí.
+  Escalar a varios procesos pide además que los trabajos en segundo plano dejen
+  de asumir un solo nodo: el despacho ya usa `lease`; el envío de campañas
+  (`enCurso` en memoria) deberá reclamar la campaña en la base.
+
+## Reparto de responsabilidades (2026-10-27, tercera indicación)
+
+El dueño aclaró: «todo queda como está actualmente, menos el acceso de usuarios
+de los tenant (administrador, asistente, etc.), permisos y roles, y la IA
+configurable del tenant, que pasan al superadmin, que administra esas apikeys y
+sus créditos».
+
+- **Pasa a la plataforma:** (1) Ajustes → IA (proveedor, modelo, llave, saldo) y
+  (2) Ajustes → Equipo (alta de cuentas, roles y permisos).
+- **Se queda como hoy en el negocio:** todo lo demás —WhatsApp y canales,
+  plantillas, marca, apariencia, agenda, atribución, respuestas rápidas,
+  Bandeja, contactos, embudo, Laboratorio, perfil y conocimiento del agente,
+  Resultados—.
+- **Con `PLATAFORMA` apagada nada cambia:** el negocio único sigue
+  configurando su IA y su equipo como hoy.
+- **Con `PLATAFORMA` encendida:** `/api/settings/ai/*` y el alta o edición de
+  `/api/settings/team` responden 403 `gestionado_por_plataforma` a los
+  usuarios del negocio (el propietario incluido); las pantallas se ocultan; la
+  guía de inicio marca el paso de IA como «lo gestiona la plataforma». El
+  negocio SÍ ve, en solo lectura, el estado de su IA, su saldo y la lista de su
+  equipo.
+- **Consecuencia sobre D2:** el negocio nunca elige modo ni pega llaves. El
+  superadmin decide por negocio: llave propia del negocio (cargada y rotada por
+  el superadmin; solo se mide) o llave de plataforma con crédito.
+- **Roles y permisos:** hoy hay tres roles fijos (`owner`, `admin`, `member`) y
+  `canConfigure()`. Pasan a ser un catálogo que gobierna el superadmin: roles
+  (administrador, asistente, …) = conjuntos de permisos de una lista finita
+  (ver la Bandeja, responder, editar contactos, mover el embudo, gestionar la
+  agenda, configurar canales, enviar campañas, ver Resultados…), asignados por
+  usuario desde el portal. Los tres roles actuales se migran 1:1 como roles del
+  sistema para no romper nada. **Por confirmar antes de S5:** el catálogo
+  exacto de permisos.
+
 ## Rebanadas (cada una se entrega verde antes de la siguiente)
 
 - **S1 · Cimientos.** Bandera `PLATAFORMA`; migración con las tablas de
   arriba; `requireSuperadmin()` + prueba de guardarraíl (S-1); script
   `platform:grant`; helper `auditar()`; pruebas. Sin UI.
-- **S2 · Negocios y usuarios (PL-1, PL-2).** API + pantallas.
+- **S2 · Negocios y usuarios (PL-1, PL-2).** API + pantallas; el alta de un
+  negocio pasa a ser cosa del superadmin.
+- **S2b · El cerebro por negocio (PL-11).** Diseño y spike: credencial y ruta
+  por organización para el despacho y `/api/bot/*`. Es la condición para
+  escalar sin un deploy por cliente; se diseña antes de S3.
 - **S3 · Medición y crédito (PL-4, parte de PL-5).** Registrar `ai_usage` en
   el proxy del cerebro y en `chatJson`; libro y cuenta; llave de plataforma;
   resolución `platform` en `lib/ai/provider.ts`. **La más riesgosa:** toca el
   camino de la IA de todos.
 - **S4 · Consumo, productividad y resumen (PL-5, PL-6, PL-7).**
-- **S5 · Agentes y recomendaciones (PL-3 y lo de abajo).**
+- **S3b · Llaves de IA por negocio (PL-8)** y cierre de Ajustes → IA para los
+  negocios cuando `PLATAFORMA` está encendida (403 + pantalla oculta + guía de
+  inicio).
+- **S5 · Accesos, roles y permisos (PL-9)**: catálogo de roles y permisos,
+  asignación por usuario, cierre de Ajustes → Equipo para los negocios,
+  sesiones y la tabla `login_event`.
+- **S6 · Logs y seguridad (PL-10)** y los agentes de IA (PL-3).
+- **S7 · Las recomendaciones de abajo.**
 
 ## Funcionalidades recomendadas (después de S5, por valor)
 
