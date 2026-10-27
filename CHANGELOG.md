@@ -5,6 +5,20 @@ sigue el SemVer del [README](README.md#versiones): una menor trae funciones
 nuevas y actualizar es redesplegar. Desde 1.4.0, cada tag `vX.Y.Z` publica la
 imagen `ghcr.io/kevinrivm/vocero-crm:X.Y.Z`.
 
+## Sin publicar
+
+### Cambia
+- **La marca visible pasa de «Vocero» a «Wassapi»**: interfaz, título, documentación y textos. El logo «v» de Vocero ya
+  no se dibuja con el nombre por defecto: se muestra la inicial «W» sobre el color de acento hasta subir un logo propio.
+- **Lo técnico NO cambia a propósito**, para no romper instalaciones ni al agente: cabeceras `X-Vocero-*`, la ruta
+  `/vocero/dispatch`, la cadena de la credencial derivada, variables `VOCERO_*`, nombres de imagen y de volúmenes y las
+  claves de `localStorage`. Si más adelante se renombran, debe ser con un periodo en que se aceptan los dos nombres.
+
+### Nuevo
+- `deploy/`: stack de producción para un servidor (Caddy con HTTPS automático, app, agente, Postgres en red interna,
+  respaldos diarios con prueba de restauración, `deploy.sh` con reversión). Guía: `docs/despliegue-almalinux.md`.
+- La imagen incluye `platform-grant.mjs` para otorgar el primer superadmin en producción.
+
 ## 2.5.1 — 2026-10-25
 
 Un retoque de interfaz. Actualizar es redesplegar con la etiqueta `2.5.1`: no

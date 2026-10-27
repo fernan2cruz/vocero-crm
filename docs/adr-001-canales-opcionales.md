@@ -4,7 +4,7 @@
 
 ## El problema
 
-Vocero debe seguir siendo una herramienta ligera: quien lo instala para un
+Wassapi debe seguir siendo una herramienta ligera: quien lo instala para un
 negocio que solo vende por WhatsApp no debería ver pantallas, variables ni
 conceptos de canales que no usa. Pero un cliente que sí quiere Instagram debe
 poder tenerlo rápido, sin que su instancia se convierta en un fork.
@@ -81,7 +81,7 @@ canales sin pasar por el repo. Ahí toca extraer una interfaz de adaptador y
 paquetes versionados. Construir eso para un solo canal opcional sería
 adelantarse.
 
-**Nota sobre "plugin"**: en Vocero significa *rápido de contribuir y de
+**Nota sobre "plugin"**: en Wassapi significa *rápido de contribuir y de
 encender*, no *cargable en runtime desde cualquier lado*. Código de terceros
 corriendo en el proceso tendría acceso a la base y podría leer descifrados los
 tokens de WhatsApp de todos los clientes. Ese modelo de amenaza es otro, y no

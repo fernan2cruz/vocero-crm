@@ -11,9 +11,9 @@ import {
 
 /**
  * La guía de inicio: cuatro pasos (cinco con la agenda) y nada más (issue #86).
- * 036 — «Conecta tu agente» es opcional: sin él, Vocero es una bandeja manual.
+ * 036 — «Conecta tu agente» es opcional: sin él, Wassapi es una bandeja manual.
  *
- * Es lo primero que ve quien instala Vocero: configurar el agente, vincular
+ * Es lo primero que ve quien instala Wassapi: configurar el agente, vincular
  * el proveedor de IA, conectar el número y, si la agenda existe en esta
  * instancia, dejarla lista. Al terminar, un botón enciende el agente. Lo
  * demás —la Bandeja, el Pipeline— ya está en el menú; la guía no lo repite.
@@ -34,7 +34,7 @@ export type GuideStep = {
   cta: string;
   /** Lo que falta, cuando no es lo obvio del paso. */
   hint: string | null;
-  /** 036 — No cuenta para `complete`: sin cerebro, Vocero es una bandeja
+  /** 036 — No cuenta para `complete`: sin cerebro, Wassapi es una bandeja
    *  manual, y eso es un producto válido. */
   optional?: boolean;
 };
@@ -100,7 +100,7 @@ export function guideFrom(status: OnboardingStatus, gestion?: { modo: "own_key" 
       key: "brain",
       title: "Conecta tu agente",
       description:
-        "Vocero no trae agente: contesta el que conectas al lado (Nea, o el tuyo). Sin agente, Vocero funciona como bandeja manual y contestas tú.",
+        "Wassapi no trae agente: contesta el que conectas al lado (Nea, o el tuyo). Sin agente, Wassapi funciona como bandeja manual y contestas tú.",
       done: ready(brain),
       href: GUIA_DEL_PAR,
       cta: "Cómo conectarlo",

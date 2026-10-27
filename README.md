@@ -1,23 +1,23 @@
-# Vocero CRM
+# Wassapi CRM
 
 [![CI](https://github.com/kevinrivm/vocero-crm/actions/workflows/ci.yml/badge.svg)](https://github.com/kevinrivm/vocero-crm/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **El CRM de WhatsApp open source para tu agente de IA, con un Laboratorio que lo pone a prueba.**
 
-Vocero es un CRM self-hosted y gratuito para negocios que venden por WhatsApp:
+Wassapi es un CRM self-hosted y gratuito para negocios que venden por WhatsApp:
 bandeja en tiempo real, pipeline de ventas, el perfil y el conocimiento de tu
 agente, y un **Laboratorio** donde clientes simulados lo evalúan antes de que
 hable con clientes reales. Una instancia = un negocio, en tu propio servidor,
 con tus datos.
 
-Vocero no trae agente: contesta el que conectas al lado.
+Wassapi no trae agente: contesta el que conectas al lado.
 [Nea](https://github.com/kevinrivm/nea-agent) (MIT) es el recomendado y se
 levanta con el mismo `docker compose`; también puedes conectar el tuyo por el
-[contrato público](#-tu-agente-al-lado-del-crm). Sin agente, Vocero es un CRM
+[contrato público](#-tu-agente-al-lado-del-crm). Sin agente, Wassapi es un CRM
 de bandeja manual y contestas tú. El token de WhatsApp nunca sale del CRM.
 
-![Bandeja de Vocero CRM](docs/screenshots/bandeja.png)
+![Bandeja de Wassapi CRM](docs/screenshots/bandeja.png)
 
 <p align="center">
   <img src="docs/screenshots/laboratorio.png" width="49%" alt="Laboratorio: reporte con score y hallazgos" />
@@ -183,7 +183,7 @@ y su guion en [`tests/e2e/us-despacho.md`](tests/e2e/us-despacho.md).
 
 Si tu bot recibe los webhooks de Meta por un **override de callback de la
 WABA**, guardar la conexión en Configuración → WhatsApp (o rotar el token) lo
-respeta: Vocero ve el override en `GET /{WABA}/subscribed_apps`, no re-suscribe
+respeta: Wassapi ve el override en `GET /{WABA}/subscribed_apps`, no re-suscribe
 la app —que es justo lo que lo borraría— y tampoco registra su propio webhook
 en el número, porque ese tendría prioridad y dejaría sordo a tu bot. La
 pantalla te dice a qué host se está respetando y, si quieres que los mensajes
@@ -202,7 +202,7 @@ Arriba de la pantalla **Agente**, la tarjeta **«Quién responde a tus
 clientes»** dice si hay un agente conectado: su última llamada a la API, a
 quién se le despacha, cuándo llegó el último turno y si alguno no llegó, y
 —con `BRAIN_HEALTH_URL`, p. ej. `http://nea:8000/health`— si está en línea,
-su versión y su modo. Sin agente, te dice que Vocero funciona como bandeja
+su versión y su modo. Sin agente, te dice que Wassapi funciona como bandeja
 manual (es un aviso, no un error). Con el agente conectado y el interruptor
 apagado, te avisa que nadie está contestando.
 
@@ -271,7 +271,7 @@ que se lean.
 
 ### 📱 En el celular, como una app
 
-Vocero se instala desde el navegador, sin tiendas y con el nombre y el icono
+Wassapi se instala desde el navegador, sin tiendas y con el nombre y el icono
 de tu negocio:
 
 - **Android y computadora (Chrome o Edge)**: en el menú aparece **Instalar
@@ -301,7 +301,7 @@ Meta y tu proveedor LLM opcional.
 - Opcional: una API key de [OpenRouter](https://openrouter.ai) (o cualquier
   proveedor compatible) para tu agente y el juez del Laboratorio.
 - Opcional: un agente al lado del CRM ([Nea](https://github.com/kevinrivm/nea-agent)
-  u otro). Sin él, Vocero funciona como bandeja manual.
+  u otro). Sin él, Wassapi funciona como bandeja manual.
 
 ## Instalación (~15 minutos)
 
@@ -421,7 +421,7 @@ Lo nuevo va al bucket y lo que ya estaba en el volumen se sigue leyendo de
 ahí: no hay que migrar nada, y quitar la bandera tampoco deja nada ilegible.
 Si el bucket no acepta una escritura, ese archivo se guarda en el volumen
 (no se pierde) y `/api/health` (`mediaWritable: false`) y `pnpm doctor` lo
-dicen. Vocero firma las peticiones él mismo: no trae el SDK de AWS.
+dicen. Wassapi firma las peticiones él mismo: no trae el SDK de AWS.
 
 Vercel y similares siguen fuera: con el bucket ya no dependen del disco, pero
 quedan el trabajo en segundo plano (el despacho, el Laboratorio), el SSE en
@@ -451,7 +451,7 @@ solas al arrancar.
    avance; cada paso se marca solo cuando la pieza de verdad funciona. Con un
    agente conectado aparece **Encender**: hasta entonces nadie le contesta a
    los clientes y los mensajes que lleguen los atiendes tú desde la Bandeja.
-   Sin agente, la guía te dice que Vocero funciona como bandeja manual.
+   Sin agente, la guía te dice que Wassapi funciona como bandeja manual.
 3. Mientras falte un paso —o haya un agente conectado y siga apagado—, entrar
    a la app te lleva a la guía (también está en el menú, solo para el
    propietario). Si no conectas agente, con los demás pasos listos entras
@@ -466,7 +466,7 @@ solas al arrancar.
 
 ## Conexión del número de WhatsApp
 
-Vocero **consume** un token de la WhatsApp Cloud API — no implementa el
+Wassapi **consume** un token de la WhatsApp Cloud API — no implementa el
 Embedded Signup. Hay dos formas de obtenerlo:
 
 ### Modo directo (el negocio tiene su propia app de Meta)
@@ -476,16 +476,16 @@ Embedded Signup. Hay dos formas de obtenerlo:
 2. Crea un **usuario del sistema** (Business Settings → System users) con
    acceso a la WABA y genera un token permanente con permisos
    `whatsapp_business_messaging` y `whatsapp_business_management`.
-3. En Vocero: **Configuración → WhatsApp** → pega WABA ID + Phone Number ID +
-   token → **Probar conexión** → Guardar. Al guardar, Vocero **registra el
+3. En Wassapi: **Configuración → WhatsApp** → pega WABA ID + Phone Number ID +
+   token → **Probar conexión** → Guardar. Al guardar, Wassapi **registra el
    webhook en Meta por ti** (override a nivel del número, con el handshake
    incluido) y te lo confirma en pantalla. Si Meta lo rechaza, la conexión
    queda guardada igual, el aviso dice por qué (casi siempre el token no tiene
    `whatsapp_business_management`) y el botón **«Registrar en Meta»** de la
    tarjeta del webhook reintenta sin volver a pegar el token.
-4. Solo si tu app aún no tiene ningún webhook configurado (Vocero te lo
+4. Solo si tu app aún no tiene ningún webhook configurado (Wassapi te lo
    avisa): en el panel de Meta (WhatsApp → Configuration → Webhook) pega la
-   **URL del webhook** y el **verify token** que Vocero te muestra, y suscribe
+   **URL del webhook** y el **verify token** que Wassapi te muestra, y suscribe
    el campo `messages` (y `message_template_status_update` si usarás
    plantillas). Es una sola vez por app.
 5. Recomendado: agrega `META_APP_SECRET` (App Secret de tu app) a las
@@ -494,7 +494,7 @@ Embedded Signup. Hay dos formas de obtenerlo:
 ### Modo agencia (Tech Provider) — para agencias
 
 Tu plataforma de agencia ya hace el Embedded Signup y guarda los tokens de tus
-clientes; la instancia de Vocero del cliente solo recibe su token. El webhook
+clientes; la instancia de Wassapi del cliente solo recibe su token. El webhook
 del cliente se conecta con el **override de callback por WABA**:
 
 ```text
@@ -502,7 +502,7 @@ del cliente se conecta con el **override de callback por WABA**:
         │  webhooks (override_callback_uri)
         ▼
    ┌────────────────────────────┐      ┌─────────────────────────────┐
-   │  Instancia Vocero          │      │  Backend de TU agencia      │
+   │  Instancia Wassapi          │      │  Backend de TU agencia      │
    │  (VPS del cliente)         │      │  (Embedded Signup + tokens) │
    │  /api/webhooks/wa/<token>  │      └──────────────┬──────────────┘
    └────────────▲───────────────┘                     │
@@ -517,10 +517,10 @@ del cliente se conecta con el **override de callback por WABA**:
 2. **Embedded Signup en TU plataforma**: el cliente conecta su número en tu
    onboarding y tu backend guarda su token (intercambio de código → token).
 3. **Pega las credenciales en el wizard** de la instancia (WABA ID, Phone
-   Number ID, token) → **Probar conexión** → **GUARDAR**. Al guardar, Vocero
+   Number ID, token) → **Probar conexión** → **GUARDAR**. Al guardar, Wassapi
    **registra el override del callback a nivel del número** hacia la propia
    instancia (y el webhook enruta cada mensaje por el Phone Number ID
-   guardado). Si tu backend ya enruta esa WABA a otro sitio, Vocero lo respeta
+   guardado). Si tu backend ya enruta esa WABA a otro sitio, Wassapi lo respeta
    y no registra el del número.
 4. **Solo si prefieres enrutar desde tu backend** (o el registro automático
    falló), configura el override del callback a nivel WABA hacia la instancia:
@@ -539,7 +539,7 @@ del cliente se conecta con el **override de callback por WABA**:
    La URL y el verify token exactos están en **Configuración → WhatsApp** de la
    instancia. Meta hace el handshake en ese momento (la URI debe responder, si
    no devuelve 422). Volver a guardar la conexión después (p. ej. al rotar el
-   token) respeta este override: Vocero no re-suscribe una WABA que ya lo tiene.
+   token) respeta este override: Wassapi no re-suscribe una WABA que ya lo tiene.
 5. **Registra el número** en la Cloud API si aún no lo está
    (`POST /{PHONE_NUMBER_ID}/register`) y manda un mensaje de prueba al número:
    debe aparecer en la bandeja en uno o dos segundos. Los mensajes del cliente
@@ -552,13 +552,13 @@ del cliente se conecta con el **override de callback por WABA**:
 >
 > ℹ️ **Limitación conocida de Meta**: los eventos de estado de PLANTILLAS
 > (`message_template_status_update`) no siguen el override de callback — van a
-> la app dueña. Por eso Vocero también **sincroniza plantillas por la API de
+> la app dueña. Por eso Wassapi también **sincroniza plantillas por la API de
 > Graph** (botón "Sincronizar" en Configuración → Plantillas), así el modo
 > agencia ve las aprobaciones igual.
 
 ## Canales opcionales: Instagram, Messenger y TikTok
 
-WhatsApp es el canal por el que existe Vocero y siempre está encendido. Los
+WhatsApp es el canal por el que existe Wassapi y siempre está encendido. Los
 demás viajan en el mismo código, **apagados por defecto** ([ADR-001](docs/adr-001-canales-opcionales.md)):
 una instancia que no los usa no ve pantallas, webhooks ni variables suyas.
 Se encienden con una variable de despliegue:
@@ -571,7 +571,7 @@ Con más de un canal encendido, la Bandeja enseña el distintivo de cada
 conversación y permite filtrar por canal. El contacto, el pipeline, la ficha
 y el agente son los mismos: un lead es un lead, escriba por donde escriba.
 
-Tu agente escribe igual para todos los canales y Vocero lo adapta al salir:
+Tu agente escribe igual para todos los canales y Wassapi lo adapta al salir:
 en Instagram, Messenger y TikTok, que no dibujan las negritas de WhatsApp, su
 texto llega sin asteriscos, con viñetas y con los enlaces legibles.
 
@@ -583,19 +583,19 @@ mirar cuando «no me llegan los mensajes».
 ### Conectar por Zernio (Instagram, Messenger o TikTok)
 
 [Zernio](https://zernio.com) es una API unificada: vinculas ahí tus redes, con
-tu propia cuenta, y una sola llave las entrega todas. En Vocero es igual para
+tu propia cuenta, y una sola llave las entrega todas. En Wassapi es igual para
 los tres canales:
 
 1. En Zernio vincula la red (**Accounts → Connect**) y crea una API key
    (**Settings → API Keys**; empieza con `sk_` y se muestra una sola vez).
-2. En Vocero abre la pantalla del canal, elige *Zernio*, pega la llave y
+2. En Wassapi abre la pantalla del canal, elige *Zernio*, pega la llave y
    pulsa **Probar y conectar**. Solo el propietario puede hacerlo.
 
 No hay que copiar ningún id ni dar de alta nada más en Zernio:
 
-- **La cuenta la encuentra Vocero** con esa llave. Si la llave tiene varias
+- **La cuenta la encuentra Wassapi** con esa llave. Si la llave tiene varias
   cuentas de esa red (una agencia), te las ofrece para elegir.
-- **El webhook lo da de alta Vocero** en tu Zernio, con el evento
+- **El webhook lo da de alta Wassapi** en tu Zernio, con el evento
   `message.received`, un secreto de firma que él genera y **limitado a tus
   cuentas conectadas**. Un webhook de Zernio sin ese límite recibe los
   mensajes de todas las cuentas de la llave. Los demás webhooks que tengas en
@@ -619,14 +619,14 @@ desde **Configuración → Messenger**. La página y su nombre salen de Zernio.
 1. En [developers.facebook.com](https://developers.facebook.com) crea (o usa)
    una app con el producto **Messenger** y genera el **token de acceso de la
    página** con el permiso `pages_messaging`. Anota el **ID de la página**.
-2. En Vocero, **Configuración → Messenger**: elige *App propia de Meta*, pega
+2. En Wassapi, **Configuración → Messenger**: elige *App propia de Meta*, pega
    el ID y el token y pulsa *Probar y guardar*.
 3. En la app de Meta, **Messenger → Webhooks**: objeto `page`, campo
    `messages`, esa URL de callback y el token de verificación que enseña la
    pantalla. Suscribe la página a la app.
 
 Desde ese momento, lo que la gente le escribe a la página entra a la bandeja
-como `Messenger`, con el nombre de su perfil, y lo que respondas desde Vocero
+como `Messenger`, con el nombre de su perfil, y lo que respondas desde Wassapi
 (tú o el agente) llega a su chat. No hay plantillas: pasadas 24 horas del
 último mensaje del cliente ya solo puede contestar una persona, hasta 7 días
 (sale con la etiqueta `HUMAN_AGENT` de Meta); la bandeja lo avisa y dice
@@ -652,7 +652,7 @@ página de Facebook vinculada: eso solo lo pide Messenger.
    una app con el producto **Instagram** y genera el token de la cuenta con
    los permisos `instagram_business_basic` e
    `instagram_business_manage_messages`. Anota el **ID de la cuenta**.
-2. En Vocero, **Configuración → Instagram**: elige *App propia de Meta*, pega
+2. En Wassapi, **Configuración → Instagram**: elige *App propia de Meta*, pega
    el ID y el token y pulsa *Probar y guardar*.
 3. En la app de Meta, **Instagram → Webhooks**: objeto `instagram`, campo
    `messages`, con la URL de callback y el token de verificación que enseña
@@ -671,11 +671,11 @@ TikTok no entrega mensajes a una app propia: llegan por
 [Zernio](https://zernio.com), con tu cuenta de Zernio.
 
 Sigue [Conectar por Zernio](#conectar-por-zernio-instagram-messenger-o-tiktok)
-desde **Configuración → TikTok**. Si la cuenta es personal, Vocero la conecta
+desde **Configuración → TikTok**. Si la cuenta es personal, Wassapi la conecta
 pero te avisa ahí mismo y en **Estado**: TikTok no le entrega mensajes hasta
 que sea Business.
 
-Lo que TikTok impone, y Vocero te dice antes de que lo descubras con un
+Lo que TikTok impone, y Wassapi te dice antes de que lo descubras con un
 mensaje rechazado:
 
 - La cuenta tiene que ser **TikTok Business**, registrada fuera de la Unión
@@ -685,7 +685,7 @@ mensaje rechazado:
   horas**. No hay plantilla que reabra: el undécimo se rechaza (409
   `message_limit`) hasta que el cliente vuelva a escribir.
 - Cada mensaje es texto, de hasta 6,000 caracteres. Las imágenes entran (como
-  aviso de que llegó una), pero todavía no se envían desde Vocero.
+  aviso de que llegó una), pero todavía no se envían desde Wassapi.
 
 El detalle está en [`specs/022-canal-tiktok`](specs/022-canal-tiktok/spec.md).
 
@@ -726,13 +726,13 @@ encenderlo con clientes reales.
 ## Cumplimiento con las políticas de Meta
 
 1. **Opt-in**: escribe solo a personas que iniciaron la conversación o
-   aceptaron recibir mensajes; Vocero respeta la ventana de 24 h y bloquea el
+   aceptaron recibir mensajes; Wassapi respeta la ventana de 24 h y bloquea el
    texto libre fuera de ella.
 2. **Plantillas aprobadas** para reabrir conversaciones: nada de trucos para
    saltarse la aprobación de Meta.
 3. **El Laboratorio es 100 % interno**: los clientes simulados jamás tocan la
    API de WhatsApp (bloqueado por diseño y verificado con tests).
-4. **Sin spam ni broadcast**: Vocero no incluye envíos masivos; úsalo para
+4. **Sin spam ni broadcast**: Wassapi no incluye envíos masivos; úsalo para
    conversaciones reales de venta y soporte.
 5. **Datos del cliente en su servidor**: cada negocio aloja su instancia; el
    token va cifrado en reposo y los webhooks se validan por URL secreta y
@@ -757,10 +757,10 @@ Configuración → WhatsApp. Si dice "reconectar", el token expiró: pega uno
 nuevo. En modo directo usa un token de usuario del sistema (no expira).
 
 **Error 131030 al enviar** — El número destino no está en la lista de
-permitidos (números de prueba de Meta) o el formato es inválido. Vocero ya
+permitidos (números de prueba de Meta) o el formato es inválido. Wassapi ya
 normaliza los números de México (521 → 52).
 
-**El agente no responde** — Vocero no trae agente: ¿hay uno conectado? La
+**El agente no responde** — Wassapi no trae agente: ¿hay uno conectado? La
 tarjeta «Quién responde» de la pantalla Agente lo dice (y si su `/health`
 contesta). ¿El interruptor está encendido? ¿Llave de IA vigente en Ajustes →
 IA? ¿La conversación tiene la IA activa y sin handoff? ¿Ventana de 24 h
@@ -783,7 +783,7 @@ arranque lo dice (`[boot] MEDIA_DIR … no es escribible`). Monta un volumen en
 `MEDIA_DIR` en la plataforma: el contenedor le da el volumen al usuario de la
 app al arrancar.
 
-**Olvidé mi contraseña y no puedo entrar** — Vocero no manda correos (sería una
+**Olvidé mi contraseña y no puedo entrar** — Wassapi no manda correos (sería una
 dependencia externa) y el registro público se cierra con la primera
 organización, así que no hay flujo de "olvidé mi contraseña". La salida es
 reescribir el hash en la base:

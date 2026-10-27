@@ -57,7 +57,7 @@ try {
   ok("login", r.ok());
   const sesion = await base.storageState();
   antes = (await (await base.request.get(`${BASE}/api/settings/appearance`)).json()).apariencia;
-  // Se parte de la de Vocero para que lo de abajo no dependa de corridas anteriores.
+  // Se parte de la de Wassapi para que lo de abajo no dependa de corridas anteriores.
   await base.request.put(`${BASE}/api/settings/appearance`, {
     data: { tema: "menta", letra: "urbanist", tamano: "normal", densidad: "normal" },
   });

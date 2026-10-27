@@ -17,7 +17,7 @@ import type { Health } from "@/server/zernio/cuentas";
 /** El evento con el que llega un mensaje de un cliente. */
 export const ZERNIO_MESSAGE_EVENT = "message.received";
 
-/** Un webhook de `GET /webhooks/settings`, en lo que a Vocero le importa. */
+/** Un webhook de `GET /webhooks/settings`, en lo que a Wassapi le importa. */
 export type ZernioWebhook = {
   _id: string;
   name?: string | null;

@@ -16,7 +16,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
  *
  * 036 — «Conecta tu agente» es opcional y lleva a una guía externa (el
  * cerebro se conecta en el entorno, no en una pantalla). Sin agente conectado
- * la tarjeta final no ofrece encender nada: Vocero es una bandeja manual.
+ * la tarjeta final no ofrece encender nada: Wassapi es una bandeja manual.
  */
 export function OnboardingClient({
   guide,
@@ -192,7 +192,7 @@ export function OnboardingClient({
             <>
               <h2 className="flex items-center gap-2 font-semibold">
                 <Inbox className="h-4 w-4 text-muted-foreground" />
-                Listo: Vocero funciona como bandeja manual
+                Listo: Wassapi funciona como bandeja manual
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Los mensajes llegan a la Bandeja y contestas tú. Para que un

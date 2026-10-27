@@ -1,5 +1,5 @@
 # ============================================================
-# Vocero CRM — Blueprint de Render (render.com/docs/blueprint-spec)
+# Wassapi CRM — Blueprint de Render (render.com/docs/blueprint-spec)
 #
 # Un servicio web desde la imagen publicada (sin build en Render), una base
 # Postgres gestionada y un disco persistente en /data. Se aplica desde el

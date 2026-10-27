@@ -3,7 +3,7 @@ import { faviconCacheKey } from "./favicon";
 import type { Branding } from "./branding";
 
 /**
- * 048 — Vocero instalable en el celular (PWA), con la marca de la
+ * 048 — Wassapi instalable en el celular (PWA), con la marca de la
  * organización. Lo puro vive aquí para probarlo sin servidor: el manifest, los
  * tamaños de icono y sus URLs.
  */
@@ -52,7 +52,7 @@ export function shortAppName(name: string): string {
   return primera.length <= 12 ? primera : primera.slice(0, 12);
 }
 
-/** Pura: el manifest de la instancia. Nada de «Vocero» cableado: sale de la marca. */
+/** Pura: el manifest de la instancia. Nada de «Wassapi» cableado: sale de la marca. */
 export function buildManifest(
   branding: Pick<Branding, "name" | "accent" | "favicon">,
   description: string

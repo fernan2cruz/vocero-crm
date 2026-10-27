@@ -5,7 +5,7 @@ import { useEffect } from "react";
 /**
  * 045 — Avisos de mensaje nuevo, como WhatsApp Web: un sonido corto cuando
  * entra un mensaje y, en la pestaña, cuántos chats tienen mensajes sin leer
- * («(3) Vocero»).
+ * («(3) Wassapi»).
  *
  * El sonido se sintetiza con Web Audio (dos notas cortas): no hay archivo que
  * servir ni que licenciar. El navegador no deja sonar nada antes de que la
@@ -106,7 +106,7 @@ export function debeSonar(m: { direction?: string; conversationId: string }): bo
   return !mirando;
 }
 
-/** «(3) Vocero — CRM»; sin pendientes, el título tal cual. */
+/** «(3) Wassapi — CRM»; sin pendientes, el título tal cual. */
 export function tituloConNoLeidos(titulo: string, chats: number): string {
   const base = titulo.replace(/^\(\d+\+?\)\s+/, "");
   if (chats <= 0) return base;

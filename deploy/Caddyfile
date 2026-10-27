@@ -1,0 +1,26 @@
+# Borde de Wassapi. Las variables vienen del compose (DOMAIN, CADDY_GLOBAL, CADDY_TLS).
+#   CADDY_TLS vacío          -> certificado de Let's Encrypt automático (DNS apuntando aquí y 80/443 abiertos)
+#   CADDY_TLS="tls internal" -> certificado propio de Caddy (pruebas, IP sin dominio, o detrás de un túnel)
+{
+	{$CADDY_GLOBAL:}
+}
+
+{$DOMAIN} {
+	{$CADDY_TLS:}
+
+	reverse_proxy app:3000 {
+		# SSE (/api/events): sin buffering ni cortes.
+		flush_interval -1
+	}
+	encode gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+	request_body {
+		max_size 26MB
+	}
+}

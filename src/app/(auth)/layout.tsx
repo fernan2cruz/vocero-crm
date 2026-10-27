@@ -8,7 +8,7 @@ import { BrandLogo } from "@/components/brand-mark";
 /**
  * Pantalla de entrada con la escenografía del hero de vocerocrm.com: papel
  * frío, rejilla difuminada y dos resplandores (azul y cian) detrás del
- * formulario. Con la marca Vocero se remata con el titular de la landing; una
+ * formulario. Con la marca Wassapi se remata con el titular de la landing; una
  * instancia white-label ve su nombre y una descripción neutra.
  */
 export default async function AuthLayout({

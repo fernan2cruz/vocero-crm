@@ -1590,7 +1590,7 @@ async function quienResponde(convId, estado) {
  * final se deja como estaba para lo que sigue.
  *
  * 036 — Entra el paso OPCIONAL «Conecta tu agente» (listo con el despacho
- * configurado y el `/health` del cerebro contestando). Sin cerebro, Vocero es
+ * configurado y el `/health` del cerebro contestando). Sin cerebro, Wassapi es
  * una bandeja manual: con los demás pasos listos la guía está completa y la
  * raíz NO atrapa a nadie en /onboarding; encender da 409 `sin_cerebro`. Con
  * el cerebro falso encendido, la guía vuelve a pedir encender, como antes.
@@ -1831,7 +1831,7 @@ async function guiaChecks() {
   const htmlManual = await pantallaHtml();
   ok(
     "la tarjeta final dice «bandeja manual» y no ofrece encender",
-    htmlManual.includes("Vocero funciona como bandeja manual") && !htmlManual.includes("Encender a Sofi"),
+    htmlManual.includes("Wassapi funciona como bandeja manual") && !htmlManual.includes("Encender a Sofi"),
     htmlManual.includes("Encender a Sofi") ? "ofrece encender" : "sin el texto de bandeja manual"
   );
   const sinCerebro = await api("/api/agent/profile", {

@@ -22,7 +22,7 @@ import { readMediaFile } from "@/server/whatsapp/media";
  *
  * Con logo subido (PNG, JPEG o SVG) va el logo sobre el color de marca. Un ICO
  * o un WEBP no los sabe dibujar `ImageResponse`: con esos, como sin logo, va
- * lo mismo que la pestaña (la V de Vocero o la inicial sobre el acento).
+ * lo mismo que la pestaña (la V de Wassapi o la inicial sobre el acento).
  */
 
 /** Los formatos que `ImageResponse` dibuja dentro de un `<img>`. */
@@ -122,7 +122,7 @@ function grosor(color: string, size: number): string {
   return pasos.map(([x, y]) => `${x}px ${y}px 0 ${color}`).join(", ");
 }
 
-/** La V de Vocero sola, sin mosaico: el mosaico lo pone el contenedor. */
+/** La V de Wassapi sola, sin mosaico: el mosaico lo pone el contenedor. */
 function marcaVocero(): string {
   const svg = [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="240" height="240">`,

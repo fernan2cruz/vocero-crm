@@ -1,6 +1,6 @@
-# Migrar a Vocero 2.0
+# Migrar a Wassapi 2.0
 
-En la 2.0 **el agente sale del CRM**. Vocero se queda con lo suyo —bandeja,
+En la 2.0 **el agente sale del CRM**. Wassapi se queda con lo suyo —bandeja,
 pipeline, agenda, perfil del agente, conocimiento, Laboratorio— y quien
 contesta es un cerebro aparte, conectado por un contrato público:
 [Nea](https://github.com/kevinrivm/nea-agent) (MIT) u otro.
@@ -10,8 +10,8 @@ vienes.
 
 | Vienes de | Qué haces |
 |---|---|
-| **Solo el agente incluido** | La 2.0 lo retira: levantas Nea al lado del CRM (abajo, «El par»), le das el despacho y **vuelves a encender el agente** en la pantalla Agente. El perfil, el conocimiento, la llave de Ajustes → IA y el Laboratorio no se tocan: ya viven en el CRM, y Nea piensa con esa misma llave. Sin Nea, Vocero sigue funcionando como bandeja manual. |
-| **Nea 1.x delante del CRM** | Nada obligatorio: Nea 1.x frente a Vocero 2.0 sigue funcionando, porque `/api/bot/*` no cambió. Para pasar al despacho (y que Nea conteste Instagram, Messenger y TikTok): actualiza Nea, dale el despacho y **recupera el webhook** (abajo). |
+| **Solo el agente incluido** | La 2.0 lo retira: levantas Nea al lado del CRM (abajo, «El par»), le das el despacho y **vuelves a encender el agente** en la pantalla Agente. El perfil, el conocimiento, la llave de Ajustes → IA y el Laboratorio no se tocan: ya viven en el CRM, y Nea piensa con esa misma llave. Sin Nea, Wassapi sigue funcionando como bandeja manual. |
+| **Nea 1.x delante del CRM** | Nada obligatorio: Nea 1.x frente a Wassapi 2.0 sigue funcionando, porque `/api/bot/*` no cambió. Para pasar al despacho (y que Nea conteste Instagram, Messenger y TikTok): actualiza Nea, dale el despacho y **recupera el webhook** (abajo). |
 | **Tu propio cerebro sobre `/api/bot/*`** | Nada. Recibir el despacho es opcional; el contrato está en [`docs/openapi.json`](openapi.json). Si lo recibes, el interruptor de la pantalla Agente decide si se despacha (ver «El interruptor»). Opcional: piensa por `/api/bot/llm` en vez de llevar tu llave. |
 
 ## El par: CRM + Nea

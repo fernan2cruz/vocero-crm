@@ -127,7 +127,7 @@ export function BrandingClient({
               maxLength={30}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Vocero"
+              placeholder="Wassapi"
               className="max-w-xs"
             />
           </div>

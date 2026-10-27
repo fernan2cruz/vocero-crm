@@ -50,7 +50,7 @@ export const TEMAS: Record<TemaId, Tema> = {
     tokens: {},
   },
   vocero: {
-    nombre: "Vocero",
+    nombre: "Wassapi",
     descripcion: "El azul papel frío de la 2.x.",
     modo: "light",
     pareja: "vocero-oscuro",
@@ -92,7 +92,7 @@ export const TEMAS: Record<TemaId, Tema> = {
     },
   },
   "vocero-oscuro": {
-    nombre: "Vocero oscuro",
+    nombre: "Wassapi oscuro",
     descripcion: "El azul marino de la 2.x.",
     modo: "dark",
     pareja: "vocero",
@@ -354,7 +354,7 @@ export const APARIENCIA_COOKIE = "vocero-apariencia";
 
 /**
  * Lo que vale: la cookie de la persona si es válida; si no, el del negocio;
- * si no, el de Vocero. Nunca lanza: una cookie manipulada cae al siguiente.
+ * si no, el de Wassapi. Nunca lanza: una cookie manipulada cae al siguiente.
  */
 export function resolverApariencia(
   cookie: string | null | undefined,

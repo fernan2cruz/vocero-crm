@@ -10,7 +10,7 @@ import { resolveAccentSet, type Branding } from "./branding";
 /**
  * El icono de la pestaña, white-label.
  *
- * Toda instancia tiene uno **sin configurar nada**: si se llama Vocero, es el
+ * Toda instancia tiene uno **sin configurar nada**: si se llama Wassapi, es el
  * logo de la marca (la "v" con remate cian sobre el mosaico azul, igual que en
  * vocerocrm.com); con otro nombre se dibuja la inicial sobre el acento. Una
  * agencia que despliega para su cliente puede subir el logo real y
@@ -90,7 +90,7 @@ export function sniffFaviconMime(bytes: Uint8Array): FaviconMime | null {
   return null;
 }
 
-/** Inicial que se dibuja. Vacío o raro cae a la V de Vocero. */
+/** Inicial que se dibuja. Vacío o raro cae a la V de Wassapi. */
 export function faviconInitial(name: string): string {
   const c = name.trim().charAt(0).toUpperCase();
   return c || "V";
@@ -118,7 +118,7 @@ export function generatedFaviconSvg(branding: Branding): string {
 
 /**
  * El favicon de vocerocrm.com, con el degradado en el acento de la instancia:
- * una instancia llamada Vocero pero con otro color sigue viendo SU color.
+ * una instancia llamada Wassapi pero con otro color sigue viendo SU color.
  * El trazo sale de `lib/brand`, el mismo que dibuja la barra lateral.
  */
 function voceroFaviconSvg(from: string, to: string): string {

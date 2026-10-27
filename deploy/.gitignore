@@ -1,0 +1,4 @@
+.env
+.deployed_tag
+certs/
+backups/

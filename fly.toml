@@ -1,5 +1,5 @@
 # ============================================================
-# Vocero CRM — fly.toml (docs.fly.io/reference/configuration)
+# Wassapi CRM — fly.toml (docs.fly.io/reference/configuration)
 #
 # 2.0 — El agente (Nea) es otra app de Fly al lado: `fly launch --image
 # ghcr.io/kevinrivm/nea-agent:2.0.2 --no-public-ips` con CRM_BASE_URL hacia

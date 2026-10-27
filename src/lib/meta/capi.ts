@@ -37,7 +37,7 @@ export type BusinessMessagingEvent = {
  * Catálogo CERRADO de `event_name` que Meta acepta con
  * `action_source: "business_messaging"`. Cualquier otro nombre es un 400 opaco.
  *
- * Vocero solo emite dos de ellos (`QualifiedLead` y `Purchase`); la lista
+ * Wassapi solo emite dos de ellos (`QualifiedLead` y `Purchase`); la lista
  * completa vive aquí para que un fork que agregue el suyo no descubra el
  * catálogo a golpes.
  *

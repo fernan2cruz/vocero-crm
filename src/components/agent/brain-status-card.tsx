@@ -18,9 +18,9 @@ import { cn } from "@/lib/utils";
 /**
  * «Quién responde a tus clientes»: arriba de la pantalla del Agente.
  *
- * 036 — Vocero no trae agente: contesta el cerebro que se conecta al lado
+ * 036 — Wassapi no trae agente: contesta el cerebro que se conecta al lado
  * (Nea u otro) y solo si el interruptor de esta página está encendido (el CRM
- * le despacha). Sin cerebro, Vocero es una bandeja manual: el aviso
+ * le despacha). Sin cerebro, Wassapi es una bandeja manual: el aviso
  * `sin_cerebro` informa, no alarma. Con cerebro y el interruptor apagado,
  * `apagado` sí avisa: nadie contesta en automático.
  */
@@ -48,7 +48,7 @@ export function BrainStatusCard({
       <CardHeader className="pb-4">
         <CardTitle>Quién responde a tus clientes</CardTitle>
         <CardDescription>
-          Vocero no trae agente: contesta el que conectas al lado (Nea, o el
+          Wassapi no trae agente: contesta el que conectas al lado (Nea, o el
           tuyo), y solo con el interruptor de arriba encendido. Sin agente,
           contestas tú desde la bandeja.
         </CardDescription>
@@ -56,7 +56,7 @@ export function BrainStatusCard({
       <CardContent className="space-y-3">
         {status.warning === "sin_cerebro" && (
           <Callout tone="info" icon={Info} title="Sin agente conectado">
-            Vocero funciona como bandeja manual: tus clientes reciben lo que
+            Wassapi funciona como bandeja manual: tus clientes reciben lo que
             contestes tú. Para que un agente conteste, levántalo al lado del CRM
             y pon <Env>BRAIN_DISPATCH_URL</Env> y <Env>BOT_API_KEY</Env> en el
             entorno.{" "}

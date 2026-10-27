@@ -1,5 +1,5 @@
 # ============================================================
-# Vocero CRM — Ruta B: app + Postgres + Caddy (HTTPS automático)
+# Wassapi CRM — Ruta B: app + Postgres + Caddy (HTTPS automático)
 # Uso:        pnpm init-env --domain tu.dominio  →  pnpm doctor  →  docker compose up -d
 #             (sin Node: cp .env.example .env y rellenar a mano)
 # Actualizar: git pull  →  docker compose up -d

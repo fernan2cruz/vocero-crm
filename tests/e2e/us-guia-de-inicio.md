@@ -6,10 +6,10 @@
 > de pantalla (ver la lista, pulsar «Encender») se conducen a mano o con
 > Playwright; el arnés verifica la decisión del servidor y la API.
 
-Lo que se protege: que quien instala Vocero vea PRIMERO qué le falta —y nada
+Lo que se protege: que quien instala Wassapi vea PRIMERO qué le falta —y nada
 más—, que cada paso se marque solo cuando la pieza de verdad funciona, y que
 el botón final encienda el agente solo cuando hay uno conectado. Desde la 036
-el CRM no trae agente: «Conecta tu agente» es opcional, y sin él Vocero es una
+el CRM no trae agente: «Conecta tu agente» es opcional, y sin él Wassapi es una
 bandeja manual, no un error. Y que a nadie se le encierre: la guía captura
 solo la raíz; el menú lleva a cualquier pantalla.
 
@@ -68,7 +68,7 @@ solo la raíz; el menú lleva a cualquier pantalla.
 
 9. **Sin agente** (036): los pasos obligatorios listos y sin despacho.
    ✅ `guide.complete:true`, `brainConnected:false`; la tarjeta final dice
-   «Listo: Vocero funciona como bandeja manual» con el enlace a la receta, sin
+   «Listo: Wassapi funciona como bandeja manual» con el enlace a la receta, sin
    botón de encender. `GET /` → **307** a `/inbox`: la bandeja manual no se
    queda atrapada en la guía.
    ✅ `PUT /api/agent/profile {enabled:true}` → **409** `sin_cerebro`.

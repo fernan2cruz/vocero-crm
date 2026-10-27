@@ -15,7 +15,7 @@ import {
  *
  * 036 — El CRM ya no trae agente: quien contesta es el cerebro al que se le
  * despacha (`BRAIN_DISPATCH_URL`), y solo con el interruptor encendido. Sin
- * cerebro, Vocero es una bandeja manual, que es un producto válido: el aviso
+ * cerebro, Wassapi es una bandeja manual, que es un producto válido: el aviso
  * `sin_cerebro` informa, no alarma. Ya no hay dos que puedan contestar a la
  * vez desde el CRM, así que `doble_respuesta` se fue.
  */

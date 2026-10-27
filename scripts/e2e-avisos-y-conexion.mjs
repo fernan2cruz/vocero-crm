@@ -4,7 +4,7 @@
  *
  * Los avisos se simulan en la página (la API `Notification` y el
  * `showNotification` del service worker quedan anotados en `window.__avisos`)
- * y «Vocero oculto» se controla con `window.__oculta`. La red se corta de
+ * y «Wassapi oculto» se controla con `window.__oculta`. La red se corta de
  * verdad con `setOffline`, y el servidor «caído» es `/api/events` con 503.
  *
  * Requiere la app viva con WA_MOCK_ENABLED=true. `E2E_EMAIL` / `E2E_PASSWORD`
@@ -147,7 +147,7 @@ try {
   await activar.click();
   ok("al concederlo, la fila desaparece", Boolean(await hasta(async () => (await activar.count()) === 0, 5000)));
 
-  console.log("\n== AC2 · con Vocero oculto ==");
+  console.log("\n== AC2 · con Wassapi oculto ==");
   await oculta(true);
   await entra("a", { text: `¿Siguen abiertos? ${S}` });
   const primero = await hasta(async () => (await avisos()).find((a) => a.body === `¿Siguen abiertos? ${S}`));
@@ -167,7 +167,7 @@ try {
   await entra("a", { text: `Te estoy viendo ${S}` });
   await page.getByText(`Te estoy viendo ${S}`).first().waitFor({ timeout: 15000 });
   await espera(1500);
-  ok("con Vocero al frente y con el foco, no avisa", (await avisos()).length === n);
+  ok("con Wassapi al frente y con el foco, no avisa", (await avisos()).length === n);
   await page.getByRole("button", { name: /^Sonido de mensajes/ }).click();
   await oculta(true);
   await entra("a", { text: `Con la campana apagada ${S}` });

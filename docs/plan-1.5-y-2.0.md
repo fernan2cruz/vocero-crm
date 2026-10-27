@@ -1,4 +1,4 @@
-# Plan: Vocero 1.5 y 2.0
+# Plan: Wassapi 1.5 y 2.0
 
 Fecha: 2026-10-07. Estado: la 1.5.0 se publicó el 2026-10-08. La sección
 2.0.0 se reescribió ese mismo día y se discute en los issues del hito
@@ -6,7 +6,7 @@ Fecha: 2026-10-07. Estado: la 1.5.0 se publicó el 2026-10-08. La sección
 
 ## Por qué
 
-Vocero quiere ser el CRM de WhatsApp que una agencia instala en una tarde y
+Wassapi quiere ser el CRM de WhatsApp que una agencia instala en una tarde y
 modifica con la IA que use (Claude Code, Codex, OpenCode): intuitivo, ligero,
 desplegable en cualquier servidor y con un agente que se entiende y se prueba.
 La 1.4.0 ya hace el trabajo; lo que sigue es ordenarla, bajarle fricción y
@@ -54,7 +54,7 @@ interfaz al final porque depende del token y de la guía.
 
 ## 2.0.0 — el CRM es el producto, el agente es un servicio
 
-Hoy el agente vive dos veces: incompleto dentro de Vocero (una llamada por
+Hoy el agente vive dos veces: incompleto dentro de Wassapi (una llamada por
 turno, solo texto) y completo en Nea (fuera, en Python). Y el par está mal
 conectado: para poner a Nea delante, Nea tiene que quedarse con el webhook de
 Meta, guardar una copia del secreto de la app y relevarle cada mensaje al CRM
@@ -87,7 +87,7 @@ conectado. La 2.0 arregla eso y deja un solo agente: el de fuera.
   CRM despacha al cerebro como en producción y el juez evalúa lo que vuelve.
   Prueba al cerebro que de verdad contesta, sea Nea o cualquier otro.
 - **Retiro del agente incluido** (issue #106): solo cuando el Laboratorio ya
-  corre por el contrato. Sin cerebro conectado, Vocero es un CRM de bandeja
+  corre por el contrato. Sin cerebro conectado, Wassapi es un CRM de bandeja
   manual; la guía de inicio dice «conecta tu agente» en vez de «enciende el
   agente». *Hecho en la spec 036* (el cerebro piensa por el CRM con
   `/api/bot/llm`).
@@ -104,7 +104,7 @@ Orden: #89 → #91 → #106, con #90 y #92 en paralelo. El agente incluido no se
 toca hasta que el Laboratorio corra por el contrato.
 
 Es Mayor por la regla del README: quien usa el agente incluido tendrá que
-desplegar un cerebro junto al CRM. Quien ya corre Nea 1.x delante de Vocero
+desplegar un cerebro junto al CRM. Quien ya corre Nea 1.x delante de Wassapi
 sigue funcionando; pasar al despacho es devolverle el webhook de Meta al CRM.
 
 ## Después (2.1 en adelante)
@@ -115,7 +115,7 @@ sigue funcionando; pasar al despacho es devolverle el webhook de Meta al CRM.
   real que los pida.
 - Telegram por la Bot API oficial; TikTok si hay demanda.
 - Vercel y similares, cuando el adaptador de almacenamiento y las colas lo
-  permitan. Hoy Vocero corre tal cual en cualquier Docker (Coolify, Railway,
+  permitan. Hoy Wassapi corre tal cual en cualquier Docker (Coolify, Railway,
   Render, Fly, un VPS).
 
 ## Lo que no entra, y por qué

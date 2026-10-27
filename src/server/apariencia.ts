@@ -26,7 +26,7 @@ function leerMetadata(metadata: string | null): Record<string, unknown> {
   }
 }
 
-/** La del negocio, o null si nunca se eligió (vale la de Vocero). */
+/** La del negocio, o null si nunca se eligió (vale la de Wassapi). */
 export async function aparienciaDelNegocio(organizationId?: string | null): Promise<Apariencia | null> {
   const db = getDb();
   const rows = organizationId

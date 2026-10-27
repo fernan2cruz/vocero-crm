@@ -23,7 +23,7 @@
 2. **Sin cerebro** (app sin `BRAIN_DISPATCH_URL`): encender el interruptor.
    ✅ `PUT /api/agent/profile {enabled:true}` → **409** `sin_cerebro`; la
    pantalla dice qué falta y el interruptor sigue apagado. La tarjeta «Quién
-   responde» dice que Vocero funciona como bandeja manual, sin rojo.
+   responde» dice que Wassapi funciona como bandeja manual, sin rojo.
 3. Un inbound → aparece en la bandeja y nadie contesta solo; el operador
    contesta a mano.
 4. **Con cerebro** (`BRAIN_DISPATCH_URL` + `BRAIN_HEALTH_URL` hacia un cerebro

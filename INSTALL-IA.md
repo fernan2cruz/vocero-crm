@@ -1,4 +1,4 @@
-# INSTALL-IA.md — Instalación de Vocero CRM guiada por IA
+# INSTALL-IA.md — Instalación de Wassapi CRM guiada por IA
 
 > **Para el asistente de IA** (Claude Code u otro agente con acceso a
 > herramientas): este archivo ES tu guion de instalación. Síguelo de arriba a
@@ -71,7 +71,7 @@ cada uno está en `.env.example`): `META_APP_SECRET`, `BOT_API_KEY`,
 `BRAIN_DISPATCH_URL` y `BRAIN_HEALTH_URL` (un cerebro externo como Nea),
 `AGENDA=on`, `ATRIBUCION=on` y `CHANNELS`.
 
-Vocero no trae agente: sin uno conectado es un CRM de bandeja manual, y eso
+Wassapi no trae agente: sin uno conectado es un CRM de bandeja manual, y eso
 es una instalación válida. Si el usuario quiere que un agente conteste (Nea),
 se instala al lado del CRM y se conecta por el despacho: el webhook de Meta se
 queda en el CRM, **nunca se mueve a Nea**. **No le pongas llave de IA a Nea**
@@ -162,18 +162,18 @@ docker compose up -d
 
 ## Cierre (obligatorio decirlo al usuario)
 
-> ✅ Vocero quedó instalado en `https://<dominio>`.
+> ✅ Wassapi quedó instalado en `https://<dominio>`.
 >
 > 1. Entra y **regístrate**: el primer registro crea tu organización (después
 >    el registro público se cierra solo).
 > 2. Pulsa **"Cargar datos de demostración"** si quieres explorar con la
 >    Ferretería El Martillo.
 > 3. Para conectar tu WhatsApp entra a **Configuración → WhatsApp**: ahí está
->    el wizard; al guardar, Vocero registra el webhook en Meta por sí solo (la
+>    el wizard; al guardar, Wassapi registra el webhook en Meta por sí solo (la
 >    URL exacta sigue a la vista por si tu agencia enruta desde su backend o
 >    hay que pegarla a mano). La conexión del número NO es parte de esta
 >    instalación.
-> 4. Vocero no trae agente: la **Guía de inicio** te dice si hay uno conectado.
+> 4. Wassapi no trae agente: la **Guía de inicio** te dice si hay uno conectado.
 >    Sin él, contestas tú desde la Bandeja. Con Nea en línea, enciéndelo en la
 >    pantalla **Agente** cuando el Laboratorio te dé buen puntaje.
 

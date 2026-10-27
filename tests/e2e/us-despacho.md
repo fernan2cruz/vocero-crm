@@ -168,6 +168,6 @@ configurada: no importa, el CRM no contesta solo).
   el agente responde 409 `sin_cerebro`.
 - **La tarjeta.** En la pantalla Agente, la fila «Despacho al cerebro» dice
   «Activo · host» con la última entrega; tras un turno que no llegó, pasa a
-  ámbar con el motivo. Sin cerebro, la tarjeta dice que Vocero funciona como
+  ámbar con el motivo. Sin cerebro, la tarjeta dice que Wassapi funciona como
   bandeja manual (informativo, no rojo); con cerebro y el interruptor
   apagado, que nadie está contestando.

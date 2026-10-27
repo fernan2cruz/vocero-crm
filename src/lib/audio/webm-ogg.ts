@@ -245,7 +245,7 @@ function opusHead(pista: Pista): Uint8Array {
 }
 
 function opusTags(): Uint8Array {
-  const vendor = new TextEncoder().encode("Vocero");
+  const vendor = new TextEncoder().encode("Wassapi");
   const out = new Uint8Array(8 + 4 + vendor.length + 4);
   const dv = new DataView(out.buffer);
   out.set(new TextEncoder().encode("OpusTags"), 0);

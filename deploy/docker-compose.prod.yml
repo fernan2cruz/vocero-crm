@@ -1,0 +1,198 @@
+# Wassapi — stack de producción / servidor piloto (mismo flujo que DomiaX y ExpenseTracker).
+#
+#   cd deploy && ./scripts/gen-env.sh crm.tudominio.com      # crea .env con los secretos ya generados
+#   ./scripts/deploy.sh --build v1                            # construye, respalda, levanta y verifica
+#   docker compose -f docker-compose.prod.yml --profile tunnel up -d   # (opcional) Cloudflare Tunnel
+#
+# Redes:
+#   app   caddy <-> app <-> nea       sale a internet (Meta, proveedor de IA)
+#   data  app / nea / backup <-> postgres   internal: true (sin ruta a internet, nada publicado)
+# Solo Caddy publica puertos. Postgres es alcanzable solo desde app, nea y backup.
+# Adjuntos, logo e icono viven en el volumen `media` (/data en la app).
+#
+# Guía completa: ../docs/despliegue-almalinux.md
+
+name: wassapi-pilot
+
+x-hardened: &hardened
+  restart: unless-stopped
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "5" }   # rotación: 50 MB por contenedor
+
+networks:
+  app: {}
+  data:
+    internal: true
+
+volumes:
+  pgdata:
+  media:
+  backups:
+  caddy_data:
+  caddy_config:
+
+services:
+  # ---------------------------------------------------------------- borde (HTTPS automático)
+  caddy:
+    <<: *hardened
+    image: caddy:2.8-alpine
+    cap_add: [NET_BIND_SERVICE]
+    # BIND_ADDR=127.0.0.1 cuando un túnel (Cloudflare) del mismo servidor es la única entrada.
+    ports:
+      - "${BIND_ADDR:-0.0.0.0}:${HTTP_PORT:-80}:80"
+      - "${BIND_ADDR:-0.0.0.0}:${HTTPS_PORT:-443}:443"
+    environment:
+      DOMAIN: ${DOMAIN:?define DOMAIN}
+      CADDY_GLOBAL: ${CADDY_GLOBAL:-}      # p. ej. «email admin@tudominio.com»
+      CADDY_TLS: ${CADDY_TLS:-}            # vacío = Let's Encrypt; «tls internal» = certificado propio de Caddy
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro,z
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [app]
+    depends_on:
+      app: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:2019/config/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources: { limits: { cpus: "1.0", memory: 256M } }
+
+  # Cloudflare Tunnel (opcional: --profile tunnel). Con él no hay puerto del host expuesto: en el panel de
+  # Cloudflare el hostname apunta a https://caddy:443 con «No TLS Verify», y aquí CADDY_TLS="tls internal".
+  cloudflared:
+    profiles: ["tunnel"]
+    <<: *hardened
+    image: cloudflare/cloudflared:2024.12.2
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on:
+      caddy: { condition: service_healthy }
+    networks: [app]
+    deploy:
+      resources: { limits: { cpus: "0.5", memory: 128M } }
+
+  # ---------------------------------------------------------------- aplicación
+  app:
+    <<: *hardened
+    image: ${WASSAPI_IMAGE:-wassapi-crm}:${IMAGE_TAG:-latest}
+    build: { context: .. }
+    # El entrypoint arranca como root SOLO para dejar /data escribible y baja a `vocero` con su-exec.
+    cap_add: [CHOWN, SETUID, SETGID, FOWNER, DAC_OVERRIDE]
+    tmpfs: ["/tmp"]
+    environment:
+      APP_BASE_URL: https://${DOMAIN}${HTTPS_PORT_SUFFIX:-}
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-wassapi}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?define BETTER_AUTH_SECRET}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?define ENCRYPTION_KEY}
+      META_WEBHOOK_VERIFY_TOKEN: ${META_WEBHOOK_VERIFY_TOKEN:?define META_WEBHOOK_VERIFY_TOKEN}
+      META_APP_SECRET: ${META_APP_SECRET:-}
+      META_GRAPH_API_VERSION: ${META_GRAPH_API_VERSION:-v25.0}
+      OPENROUTER_API_TOKEN: ${OPENROUTER_API_TOKEN:-}
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-}
+      OPENROUTER_JUDGE_MODEL: ${OPENROUTER_JUDGE_MODEL:-}
+      ALLOW_SIGNUP: ${ALLOW_SIGNUP:-}
+      AGENT_COALESCE_MS: ${AGENT_COALESCE_MS:-6000}
+      # Módulos opcionales: vacío = apagado.
+      PLATAFORMA: ${PLATAFORMA:-}
+      CHANNELS: ${CHANNELS:-}
+      AGENDA: ${AGENDA:-}
+      ATRIBUCION: ${ATRIBUCION:-}
+      BOT_API_KEY: ${BOT_API_KEY:-}
+      BRAIN_HEALTH_URL: ${BRAIN_HEALTH_URL-http://nea:8000/health}
+      BRAIN_DISPATCH_URL: ${BRAIN_DISPATCH_URL-http://nea:8000/vocero/dispatch}
+    volumes: [media:/data]
+    networks: [app, data]
+    depends_on:
+      postgres: { condition: service_healthy }
+    # El arranque aplica las migraciones; start_period cubre ese tiempo.
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources: { limits: { cpus: "${APP_CPUS:-2.0}", memory: "${APP_MEM:-768M}" } }
+
+  # El agente. Misma base, esquema `nea`. Piensa por el CRM (/api/bot/llm) con la llave de Ajustes -> IA.
+  # Varios negocios en la misma plataforma: usa la Nea del fork (NEA_IMAGE propia, NEA_VOCERO_MODE=cloud,
+  # NEA_CRM_SURFACE=bot). Con la imagen oficial, un solo negocio.
+  nea:
+    <<: *hardened
+    image: ${NEA_IMAGE:-ghcr.io/kevinrivm/nea-agent}:${NEA_VERSION:-2.0.2}
+    environment:
+      CRM_BASE_URL: http://app:3000
+      CRM_BOT_API_KEY: ${BOT_API_KEY:-}
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-wassapi}
+      DATABASE_SCHEMA: nea
+      LLM_MODEL: ${OPENROUTER_MODEL:-z-ai/glm-5.3-flash}
+      ALLOWED_WA_IDS: ${ALLOWED_WA_IDS:-}
+      VOCERO_MODE: ${NEA_VOCERO_MODE:-}
+      CRM_SURFACE: ${NEA_CRM_SURFACE:-}
+    networks: [app, data]
+    depends_on:
+      postgres: { condition: service_healthy }
+    deploy:
+      resources: { limits: { cpus: "1.0", memory: 512M } }
+
+  # ---------------------------------------------------------------- datos (solo red data)
+  postgres:
+    <<: *hardened
+    image: postgres:16-alpine
+    cap_add: [CHOWN, SETUID, SETGID, FOWNER, DAC_OVERRIDE]   # el entrypoint adueña el directorio de datos y baja a postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-wassapi}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --data-checksums"
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+    command: ["postgres", "-c", "max_connections=100", "-c", "shared_buffers=${PG_SHARED_BUFFERS:-256MB}", "-c", "log_min_duration_statement=500"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    networks: [data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    deploy:
+      resources: { limits: { cpus: "${PG_CPUS:-2.0}", memory: "${PG_MEM:-1G}" } }
+
+  # Respaldo diario (pg_dump + adjuntos), prueba de restauración los domingos. Escribe en el volumen `backups`.
+  backup:
+    <<: *hardened
+    build: { context: ./backup }
+    image: wassapi-backup:local
+    command: ["/scripts/backup-loop.sh"]
+    environment:
+      PGHOST: postgres
+      PGUSER: postgres
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB:-wassapi}
+      BACKUP_HOUR_UTC: ${BACKUP_HOUR_UTC:-07}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+      BACKUP_ON_START: ${BACKUP_ON_START:-1}
+    volumes:
+      - backups:/backups
+      - media:/data:ro
+      - ./scripts:/scripts:ro,z
+    networks: [data]
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck:
+      # Sano si el último respaldo bueno tiene menos de 26 h.
+      test: ["CMD-SHELL", "[ -f /backups/status/last_success ] && [ $$(( $$(date +%s) - $$(cat /backups/status/last_success) )) -lt 93600 ]"]
+      interval: 5m
+      timeout: 5s
+      retries: 1
+      start_period: 10m
+    deploy:
+      resources: { limits: { cpus: "0.5", memory: 256M } }

@@ -299,7 +299,7 @@ describe("tinta sobre el acento: blanca solo si pasa AA (≥ 4.5:1)", () => {
       expect(contraste(s.text, s.tint), `${a}: tinta sobre tint`).toBeGreaterThanOrEqual(4.5);
       expect(contraste(s.text, pagina), `${a}: tinta sobre la página`).toBeGreaterThanOrEqual(4.5);
       // El tono ayuda (un rojo se distingue del azul marino aunque su
-      // luminancia se le acerque); el azul Vocero lleva su propio piso, 1.25.
+      // luminancia se le acerque); el azul Wassapi lleva su propio piso, 1.25.
       expect(contraste(s.tint, pagina), `${a}: tint`).toBeGreaterThanOrEqual(1.1);
     }
   });

@@ -12,7 +12,7 @@ import {
 describe("056 — cuándo avisa", () => {
   const base = { direction: "in", campana: true, permiso: "granted", visible: false, foco: false };
 
-  it("un mensaje del cliente con Vocero oculto avisa", () => {
+  it("un mensaje del cliente con Wassapi oculto avisa", () => {
     expect(debeAvisarSistema(base)).toBe(true);
   });
 

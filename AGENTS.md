@@ -1,6 +1,6 @@
-# AGENTS.md — Guía de Vocero CRM para agentes y personas
+# AGENTS.md — Guía de Wassapi CRM para agentes y personas
 
-Vocero es un CRM de WhatsApp open source (MIT) y self-hosted: bandeja en tiempo
+Wassapi es un CRM de WhatsApp open source (MIT) y self-hosted: bandeja en tiempo
 real, pipeline kanban, el perfil y el conocimiento del agente, y un Laboratorio
 donde clientes simulados lo evalúan antes de hablar con clientes reales. Desde la
 2.0 el CRM no trae agente (036): contesta un cerebro conectado al lado (Nea u
@@ -121,7 +121,7 @@ Sueltos: `notas.ts` (050: notas internas del hilo, en su propia tabla para que n
 | `scripts/` | `e2e-*.mjs` (arneses de los guiones), `migrate.mjs` (migrador del contenedor), `seed/demo.ts`, `reset-password.mjs` (imprime el `UPDATE`, no toca la BD), `screenshots.mjs` |
 | `drizzle/` | `0000…0025_*.sql` + `meta/` (snapshots y `_journal.json`). Se genera, nunca se edita a mano. A la imagen viajan solo los `.sql` y `_journal.json`: el migrador no abre los snapshots (`.dockerignore`) |
 | `specs/` | Specs por feature (001, 002, 003, 014–030) con sus contratos; `specs/README.md` explica qué hay y qué no |
-| `docs/` | ADR-001/002, `agenda-conectores.md`, `atribucion-capi.md`, capturas del README. (`getting-started.md`, `sdd-workflow.md`, `three-agent-architecture.md` y `mcp-setup.md` describen el starter de Claude Code, no Vocero) |
+| `docs/` | ADR-001/002, `agenda-conectores.md`, `atribucion-capi.md`, capturas del README. (`getting-started.md`, `sdd-workflow.md`, `three-agent-architecture.md` y `mcp-setup.md` describen el starter de Claude Code, no Wassapi) |
 
 ## Flujo de una petición: un mensaje de WhatsApp
 
@@ -150,7 +150,7 @@ La ráfaga del despacho es lo posterior al último saliente más lo que el despa
 - **Bandeja primero, cerebro después**: un despacho se encola solo cuando el mensaje ya está guardado. Lo que falle después no pierde el mensaje; lo deja con una persona.
 - **«Sin responder» no es «sin entregar»** (025): quien lleva el turno anota el id del entrante que lo provoca —el despacho, en `dispatch.message_ids`— y lo debe hasta que el cerebro lo reciba o una persona conteste. Un saliente del agente no salda un mensaje que no leyó; uno de una persona (`ai_generated = false`) sí. Un despacho sin mensajes se descarta, nunca se entrega.
 - **Módulos opcionales** van tras bandera, apagados por defecto, con superficie en 404 y migración aplicada igual. Nunca en una rama aparte.
-- **UI con tokens**: colores por variables de `globals.css` mapeadas en `tailwind.config.ts` (`bg-background`, `text-foreground`, `bg-primary`, `text-muted-foreground`…); nada de `text-white` ni hex sueltos salvo colores de marca de terceros. `tests/unit/contraste-temas.test.ts` mide los tokens reales en ambos temas. White-label: ningún «Vocero» cableado en la UI.
+- **UI con tokens**: colores por variables de `globals.css` mapeadas en `tailwind.config.ts` (`bg-background`, `text-foreground`, `bg-primary`, `text-muted-foreground`…); nada de `text-white` ni hex sueltos salvo colores de marca de terceros. `tests/unit/contraste-temas.test.ts` mide los tokens reales en ambos temas. White-label: ningún «Wassapi» cableado en la UI.
 - **`route.ts` solo exporta handlers** (`GET`, `POST`… y `dynamic`): la lógica va en `src/server/` para poder probarla; Next rechaza otros exports al construir.
 - **Secretos de canal en reposo** (030): el secreto de firma de Zernio de Instagram, Messenger y TikTok solo se escribe con `columnasDelSecreto` y se lee con `secretoDeLaFila` (`src/server/zernio/secreto-guardado.ts`); la columna `webhook_secret` es obsoleta, nada la escribe y se quita en una versión mayor. Un secreto nuevo en cualquier tabla va en columnas `*_cipher`, `*_iv`, `*_tag` con `src/lib/crypto`, nunca en claro.
 - **Credenciales nuevas**: placeholder `REEMPLAZA_...` en `.env.example` con guía inline; en producción van en la plataforma (runtime, no build).

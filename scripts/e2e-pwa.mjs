@@ -1,5 +1,5 @@
 /**
- * Self-test E2E — 048: Vocero en el celular (PWA).
+ * Self-test E2E — 048: Wassapi en el celular (PWA).
  * Guion: tests/e2e/us-pwa.md.
  *
  * Que el navegador lo dé por instalable con la marca de la organización, que
@@ -74,7 +74,7 @@ try {
   ok("name es el de la marca", m.name === nombre, m.name);
   ok("short_name cabe en 12", typeof m.short_name === "string" && m.short_name.length <= 12, m.short_name);
   ok("standalone, abre en la Bandeja", m.display === "standalone" && m.start_url === "/inbox", JSON.stringify([m.display, m.start_url]));
-  ok("ningún «Vocero» cableado", !/vocero/i.test(JSON.stringify(m)));
+  ok("ningún «Wassapi» cableado", !/vocero/i.test(JSON.stringify(m)));
   ok(
     "iconos 192 y 512 (any) y 512 (maskable)",
     JSON.stringify(m.icons.map((i) => `${i.sizes} ${i.purpose}`)) === JSON.stringify(["192x192 any", "512x512 any", "512x512 maskable"])

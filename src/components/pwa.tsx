@@ -26,7 +26,7 @@ export function RegistrarServiceWorker() {
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
     navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {
-      // Sin service worker Vocero funciona igual, en la pestaña.
+      // Sin service worker Wassapi funciona igual, en la pestaña.
     });
   }, []);
   return null;

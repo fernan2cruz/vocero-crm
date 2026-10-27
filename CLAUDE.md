@@ -1,20 +1,20 @@
-# Vocero CRM — Guía para Claude
+# Wassapi CRM — Guía para Claude
 
 Lee primero [AGENTS.md](AGENTS.md): el mapa del código y las reglas de
 modificación viven ahí; este archivo solo añade lo específico de Claude Code.
 
-Vocero es un CRM de WhatsApp open source (MIT), self-hosted, con el perfil y el
+Wassapi es un CRM de WhatsApp open source (MIT), self-hosted, con el perfil y el
 conocimiento del agente y un Laboratorio de auto-evaluación. Desde la 2.0 no
 trae agente: contesta un cerebro conectado al lado (Nea u otro). Una
 instancia = un negocio. Este archivo guía a Claude Code (u otro asistente)
 para operar y **modificar** este repositorio —
-el caso típico: una agencia adaptando Vocero para un cliente.
+el caso típico: una agencia adaptando Wassapi para un cliente.
 
 ## Stack
 
 **Next.js 15 (App Router) + React 19** en monolito · TypeScript estricto
 (`strict` + `noUncheckedIndexedAccess`) · Tailwind CSS (sistema de diseño de la
-marca Vocero, el mismo de vocerocrm.com: tokens en `src/app/globals.css`, tema
+marca Wassapi, el mismo de vocerocrm.com: tokens en `src/app/globals.css`, tema
 claro/oscuro, acento white-label por defecto `#0d5bff`, fuentes Archivo +
 Instrument Serif + IBM Plex Mono self-hosted vía `next/font`; el logo vive en
 `src/lib/brand.ts` y se dibuja con `src/components/brand-mark.tsx`) ·

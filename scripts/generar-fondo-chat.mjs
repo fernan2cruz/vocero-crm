@@ -138,7 +138,7 @@ const defs = Object.entries(DIBUJOS)
 for (const [archivo, color, opacidad] of [["claro.svg", "#000000", 0.08], ["oscuro.svg", "#ffffff", 0.07]]) {
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${LADO}" height="${LADO}" viewBox="0 0 ${LADO} ${LADO}">` +
-    `<!-- Vocero: el fondo del chat. Dibujos propios en línea; el tono lo pone la opacidad. -->` +
+    `<!-- Wassapi: el fondo del chat. Dibujos propios en línea; el tono lo pone la opacidad. -->` +
     `<defs>${defs}</defs>` +
     `<g opacity="${opacidad}" fill="none" stroke="${color}" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">${conCopias.join("")}</g>` +
     `</svg>\n`;

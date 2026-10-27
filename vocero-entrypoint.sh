@@ -1,6 +1,6 @@
 #!/bin/sh
 # ============================================================
-# Vocero CRM — entrypoint del contenedor
+# Wassapi CRM — entrypoint del contenedor
 #
 # Adjuntos, logo e icono se guardan en MEDIA_DIR (/data/media en la imagen) y
 # la app corre como `vocero`. Las plataformas montan el volumen de /data con

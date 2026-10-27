@@ -45,7 +45,7 @@ export type Branding = {
 };
 
 export const DEFAULT_BRANDING: Branding = {
-  name: "Vocero",
+  name: "Wassapi",
   // El azul eléctrico de vocerocrm.com: la instancia recién instalada se ve
   // igual que la landing. Una agencia lo cambia en Configuración → Marca.
   accent: "#0d5bff",
@@ -54,13 +54,13 @@ export const DEFAULT_BRANDING: Branding = {
 };
 
 /**
- * Presets. El primero es la marca Vocero (valores exactos de la landing); los
+ * Presets. El primero es la marca Wassapi (valores exactos de la landing); los
  * demás son los tonos sobrios del handoff Atlas, que siguen disponibles para
  * quien quiera un CRM más discreto.
  */
 export const ACCENT_PRESETS: Record<string, { label: string; set: AccentSet }> = {
   "#0d5bff": {
-    label: "Azul Vocero",
+    label: "Azul Wassapi",
     set: { accent: "#0d5bff", hover: "#0a4de6", soft: "#d3e2ff", tint: "#ebf1ff", text: "#0038d8", fg: "#ffffff" },
   },
   "#3f5972": {
@@ -166,7 +166,7 @@ function inkPasses(base: Rgb): boolean {
  */
 type DarkRecipe = { bg: Rgb; minContrast: number; soft: number; tint: number; text: number };
 
-// Página oscura: con 3:1 el azul Vocero conserva la tinta blanca (4.5:1); el
+// Página oscura: con 3:1 el azul Wassapi conserva la tinta blanca (4.5:1); el
 // tint más denso (0.78) hace que la fila seleccionada se vea sin leer el color
 // del texto (≥ 1.25:1 contra el fondo).
 const PAGE_DARK: DarkRecipe = { bg: DARK_BG, minContrast: 3, soft: 0.56, tint: 0.72, text: 0.34 };

@@ -14,7 +14,7 @@ export const ESPERA_MAX_MS = 30_000;
 /**
  * D2 — ¿Este mensaje merece un aviso del sistema? Solo los del cliente, con la
  * campana activa y el permiso concedido, y cuando el operador no está mirando
- * Vocero (si lo está, ya suena).
+ * Wassapi (si lo está, ya suena).
  */
 export function debeAvisarSistema(c: {
   direction?: string;

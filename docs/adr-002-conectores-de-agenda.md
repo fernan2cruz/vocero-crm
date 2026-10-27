@@ -11,7 +11,7 @@ argumento es ser ligero, y el estado de qué huecos se ofrecieron pertenece a la
 conversación —o sea al agente—, no al CRM.
 
 Mientras tanto, agendar es donde una conversación de WhatsApp se convierte en
-negocio, y el fork de agencia que originó a Vocero lleva meses agendando con
+negocio, y el fork de agencia que originó a Wassapi lleva meses agendando con
 Zoom en producción. La pregunta no era si el motor servía, sino dónde debía
 vivir sin romper la promesa de ligereza.
 
@@ -38,7 +38,7 @@ lo que dice.
 correcto mientras el CRM no ofreciera la garantía. Al ofrecerla, es el CRM
 quien tiene que poder probarla: con esa memoria del lado del cliente, cualquier
 cerebro conectado por `/api/bot/*` podría reservar un instante que jamás se
-ofreció, y el CRM lo aceptaría. Vocero promete "conecta tu propio cerebro"; una
+ofreció, y el CRM lo aceptaría. Wassapi promete "conecta tu propio cerebro"; una
 promesa así no puede depender de que todos los cerebros se porten bien.
 
 **3. Los proveedores entran como conectores, no como integraciones.** Un

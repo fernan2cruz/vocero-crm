@@ -62,7 +62,7 @@ describe("062 — cada tema listo se lee", () => {
       piso(v, "--border", "--bg", oscuro ? 1.6 : 1.15, id);
       piso(v, "--border-strong", "--bg", oscuro ? 2.2 : 1.35, id);
       // La burbuja del cliente se despega del hilo por su fondo o por su borde
-      // (un tema de burbujas pastel, como Vocero, se apoya en el borde).
+      // (un tema de burbujas pastel, como Wassapi, se apoya en el borde).
       const despegue = Math.max(
         contraste(hex(v, "--bubble-in"), hex(v, "--chat-bg")),
         contraste(hex(v, "--bubble-in-border"), hex(v, "--chat-bg"))
@@ -129,7 +129,7 @@ describe("062 — tema propio", () => {
 describe("062 — qué apariencia vale", () => {
   const negocio = { tema: "papel", letra: "inter", tamano: "grande", densidad: "compacta" };
 
-  it("sin cookie vale la del negocio; sin negocio, la de Vocero", () => {
+  it("sin cookie vale la del negocio; sin negocio, la de Wassapi", () => {
     expect(resolverApariencia(null, negocio)).toEqual({ apariencia: negocio, propia: false });
     expect(resolverApariencia(undefined, null).apariencia).toEqual(APARIENCIA_POR_DEFECTO);
   });
