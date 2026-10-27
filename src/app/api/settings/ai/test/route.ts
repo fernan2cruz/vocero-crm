@@ -1,4 +1,5 @@
 import { apiError, parseBody, withAuth } from "@/lib/api";
+import { gestionadoPorPlataforma } from "@/server/platform/gestionado";
 import { probeProvider } from "@/lib/ai/probe";
 import { apiRoot } from "@/lib/ai/presets";
 import { getAiCredentialPublic, marcarActiva } from "@/server/ai/credentials";
@@ -17,7 +18,7 @@ export const dynamic = "force-dynamic";
  * si el proveedor la acepta y estaba pausada, vuelve a `active` — el camino
  * de «recargué saldo» sin pegar la misma llave otra vez.
  */
-export const POST = withAuth(async (session, req: Request) => {
+const probar = withAuth(async (session, req: Request) => {
   const body = await parseBody(req, aiProbeSchema);
   if (!body.ok) return body.response;
 
@@ -68,3 +69,6 @@ export const POST = withAuth(async (session, req: Request) => {
     vista: reactivada ? await vistaAjustesIa(session.organizationId) : null,
   });
 });
+
+export const POST = async (...args: Parameters<typeof probar>) =>
+  gestionadoPorPlataforma() ?? probar(...args);

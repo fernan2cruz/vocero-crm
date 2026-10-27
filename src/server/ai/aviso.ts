@@ -1,4 +1,5 @@
 import { getDb, schema } from "@/lib/db";
+import { plataformaEnabled } from "@/server/platform/flag";
 import { scoped } from "@/lib/db/tenant";
 import { estadoIaDe, mensajeDeEstado } from "@/lib/ai/provider";
 
@@ -37,7 +38,9 @@ export async function avisoIaDe(organizationId: string): Promise<AvisoIa> {
     // Sin configurar se va a pegar la llave; pausada, a revisar la conexión.
     // Las dos acaban en la misma pantalla, y decirlo evita el «¿y dónde?».
     accion:
-      estado.motivo === "sin_configurar"
+      plataformaEnabled()
+        ? "Contactar a quien administra la plataforma"
+        : estado.motivo === "sin_configurar"
         ? "Configurar la IA"
         : "Revisar mi conexión",
   };

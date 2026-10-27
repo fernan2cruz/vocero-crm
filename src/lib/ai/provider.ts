@@ -165,6 +165,13 @@ export async function isAiConfiguredFor(
 /** El mensaje que ve el dueño cuando su agente no puede contestar. */
 export function mensajeDeEstado(estado: EstadoIa): string | null {
   if (estado.activa) return null;
+  // El negocio gestionado no puede reparar su credencial desde Ajustes.
+  if (plataformaEnabled()) {
+    if (estado.motivo === "sin_saldo" && estado.plataforma) {
+      return "Tu agente está pausado: se agotó el crédito de IA. Contacta a quien administra tu plataforma.";
+    }
+    return "Tu agente no puede contestar: la IA la administra la plataforma. Contacta a quien la administra.";
+  }
   switch (estado.motivo) {
     case "sin_configurar":
       // «Apagado» no: el interruptor de la pantalla Agente puede decir

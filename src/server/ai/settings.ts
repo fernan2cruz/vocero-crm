@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { plataformaEnabled } from "@/server/platform/flag";
+import { modoIaDe } from "@/server/platform/ai-usage";
+import { saldoDe } from "@/server/platform/credit";
 import {
   AI_PROVIDERS,
   AI_PROVIDER_PRESETS,
@@ -112,6 +115,7 @@ export async function llaveParaProbar(
 }
 
 export type AiSettingsView = {
+  plataforma?: { gestionada: true; modo: "own_key" | "platform"; saldoMicros: number | null };
   credencial: {
     proveedor: AiProviderId;
     baseUrl: string;
@@ -146,6 +150,18 @@ export function credencialVista(
   };
 }
 
+/** PL-8: lista cerrada de campos para que ni el token ni errores del proveedor salgan. */
+export function vistaLlaveIa(cred: AiCredentialPublic | null) {
+  return {
+    configurada: cred !== null,
+    provider: cred?.provider ?? null,
+    baseUrl: cred?.baseUrl ?? null,
+    model: cred?.model ?? null,
+    last4: cred?.tokenLast4 ?? null,
+    estado: cred?.status ?? null,
+  };
+}
+
 export async function vistaAjustesIa(
   organizationId: string
 ): Promise<AiSettingsView> {
@@ -153,7 +169,15 @@ export async function vistaAjustesIa(
     getAiCredentialPublic(organizationId),
     estadoIaDe(organizationId),
   ]);
-  return armarVista(cred, estado);
+  const vista = armarVista(cred, estado);
+  if (!plataformaEnabled()) return vista;
+  const modo = await modoIaDe(organizationId);
+  return {
+    ...vista,
+    // El entorno es un respaldo self-hosted; nunca revela llaves globales al negocio.
+    respaldoEntorno: null,
+    plataforma: { gestionada: true, modo, saldoMicros: modo === "platform" ? await saldoDe(organizationId) : null },
+  };
 }
 
 /** Pura, para las pruebas. */

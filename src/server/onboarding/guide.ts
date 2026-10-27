@@ -1,4 +1,7 @@
 import type { SessionContext } from "@/lib/auth/session";
+import { plataformaEnabled } from "@/server/platform/flag";
+import { modoIaDe } from "@/server/platform/ai-usage";
+import { getAiCredentialPublic } from "@/server/ai/credentials";
 import { canConfigure } from "@/lib/auth/roles";
 import {
   onboardingStatus,
@@ -52,7 +55,7 @@ export const GUIA_DEL_PAR =
 const ready = (s: ReadinessStep | undefined) => s?.status === "ready";
 
 /** Pura: de los pasos verificados a los de la guía. */
-export function guideFrom(status: OnboardingStatus): Guide {
+export function guideFrom(status: OnboardingStatus, gestion?: { modo: "own_key" | "platform"; llaveExiste: boolean }): Guide {
   const step = (key: ReadinessStep["key"]) =>
     status.steps.find((s) => s.key === key);
   const profile = step("profile");
@@ -76,11 +79,12 @@ export function guideFrom(status: OnboardingStatus): Guide {
       key: "ai",
       title: "Vincula tu proveedor de IA",
       description:
-        "Es la cuenta con la que tu agente piensa: OpenRouter o cualquier proveedor compatible con la API de OpenAI. La creas y la pagas tú; aquí solo pegas la llave y eliges el modelo.",
-      done: ready(ai),
-      href: "/settings/ai",
-      cta: "Vincular proveedor",
-      hint: ai?.problem ?? null,
+        gestion ? "La plataforma administra el proveedor, el modelo y la llave de IA de tu negocio."
+          : "Es la cuenta con la que tu agente piensa: OpenRouter o cualquier proveedor compatible con la API de OpenAI. La creas y la pagas tú; aquí solo pegas la llave y eliges el modelo.",
+      done: gestion ? gestion.modo === "platform" || gestion.llaveExiste : ready(ai),
+      href: gestion ? "/onboarding" : "/settings/ai",
+      cta: gestion ? "Consultar estado" : "Vincular proveedor",
+      hint: gestion ? "La gestiona la plataforma" : ai?.problem ?? null,
     },
     {
       key: "whatsapp",
@@ -127,7 +131,11 @@ export function guideFrom(status: OnboardingStatus): Guide {
 }
 
 export async function guideStatus(organizationId: string): Promise<Guide> {
-  return guideFrom(await onboardingStatus(organizationId));
+  const status = await onboardingStatus(organizationId);
+  if (!plataformaEnabled()) return guideFrom(status);
+  const modo = await modoIaDe(organizationId);
+  return guideFrom(status, { modo,
+    llaveExiste: modo === "own_key" && !!(await getAiCredentialPublic(organizationId)) });
 }
 
 /**

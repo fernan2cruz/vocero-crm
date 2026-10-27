@@ -1,4 +1,5 @@
 import { apiError, parseBody, withAuth } from "@/lib/api";
+import { gestionadoPorPlataforma } from "@/server/platform/gestionado";
 import {
   AiCredentialError,
   deleteAiCredential,
@@ -23,7 +24,7 @@ export const GET = withAuth(async (session) => {
   return Response.json(await vistaAjustesIa(session.organizationId));
 });
 
-export const PUT = withAuth(async (session, req: Request) => {
+const guardar = withAuth(async (session, req: Request) => {
   const body = await parseBody(req, aiSettingsPutSchema);
   if (!body.ok) return body.response;
 
@@ -44,7 +45,12 @@ export const PUT = withAuth(async (session, req: Request) => {
   return Response.json(await vistaAjustesIa(session.organizationId));
 });
 
-export const DELETE = withAuth(async (session) => {
+const eliminar = withAuth(async (session) => {
   await deleteAiCredential(session.organizationId);
   return Response.json(await vistaAjustesIa(session.organizationId));
 });
+
+export const PUT = async (...args: Parameters<typeof guardar>) =>
+  gestionadoPorPlataforma() ?? guardar(...args);
+export const DELETE = async (...args: Parameters<typeof eliminar>) =>
+  gestionadoPorPlataforma() ?? eliminar(...args);

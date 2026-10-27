@@ -1,4 +1,5 @@
 import { apiError, parseBody, withAuth } from "@/lib/api";
+import { gestionadoPorPlataforma } from "@/server/platform/gestionado";
 import { listModels } from "@/lib/ai/probe";
 import {
   aiModelsSchema,
@@ -13,7 +14,7 @@ export const dynamic = "force-dynamic";
  * guardada). Un proveedor que no publica la lista no es un error: se dice
  * (`soportado: false`) y el modelo se escribe a mano.
  */
-export const POST = withAuth(async (session, req: Request) => {
+const modelos = withAuth(async (session, req: Request) => {
   const body = await parseBody(req, aiModelsSchema);
   if (!body.ok) return body.response;
 
@@ -42,3 +43,6 @@ export const POST = withAuth(async (session, req: Request) => {
     result.code === "invalid_token" || result.code === "bad_url" ? 422 : 503;
   return apiError(status, result.code, result.message);
 });
+
+export const POST = async (...args: Parameters<typeof modelos>) =>
+  gestionadoPorPlataforma() ?? modelos(...args);
