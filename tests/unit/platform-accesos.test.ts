@@ -72,9 +72,19 @@ describe("registro tolerante a fallos", () => {
     const values = vi.fn();
     mocks.getDb.mockReturnValue({ select: () => ({ from: () => ({ leftJoin: () => ({ where: () => ({ limit: async () => [] }) }) }) }),
       insert: () => ({ values }) });
-    await registrarAcceso({ kind: "failure", reason: "bad_credentials", email: `  ${"A".repeat(260)}  `, userAgent: "b".repeat(400) });
+    // Un correo larguísimo pero de apariencia válida: se pasa a minúsculas y se recorta a 254.
+    const correo = `${"A".repeat(260)}@Ejemplo.COM`;
+    await registrarAcceso({ kind: "failure", reason: "bad_credentials", email: `  ${correo}  `, userAgent: "b".repeat(400) });
     expect(values).toHaveBeenCalledWith({ id: expect.stringMatching(/^lev_/), kind: "failure", reason: "bad_credentials",
-      email: "a".repeat(254), userAgent: "b".repeat(300), userId: null, organizationId: null, ip: null });
+      email: correo.toLowerCase().slice(0, 254), userAgent: "b".repeat(300), userId: null, organizationId: null, ip: null });
+  });
+  it("lo que no parece un correo (una contraseña tecleada en su lugar) NO se guarda", async () => {
+    const values = vi.fn();
+    mocks.getDb.mockReturnValue({ select: () => ({ from: () => ({ leftJoin: () => ({ where: () => ({ limit: async () => [] }) }) }) }),
+      insert: () => ({ values }) });
+    await registrarAcceso({ kind: "failure", reason: "bad_credentials", email: "MiClaveSecreta-123" });
+    expect(values).toHaveBeenCalledWith(expect.objectContaining({ email: null }));
+    expect(JSON.stringify(values.mock.calls)).not.toMatch(/miclave/i);
   });
   it("un fallo del driver no se propaga ni imprime los valores", async () => {
     mocks.getDb.mockImplementation(() => { throw new Error("datos que no deben salir"); });

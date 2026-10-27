@@ -16,9 +16,9 @@ import { mensajeError, peticion } from "./peticion";
 import { CreditoNegocio, type CreditoNegocioProps } from "./credito-negocio";
 import { LlaveIa, type VistaLlave } from "./llave-ia";
 
-export function NegocioClient({ negocio, usuarios, credito, llave, informes }: {
+export function NegocioClient({ negocio, usuarios, credito, llave, informes, sesiones }: {
   negocio: NonNullable<Awaited<ReturnType<typeof obtenerNegocio>>>; usuarios: UsuarioPortal[];
-  credito: CreditoNegocioProps; llave: VistaLlave; informes: React.ReactNode;
+  credito: CreditoNegocioProps; llave: VistaLlave; informes: React.ReactNode; sesiones?: React.ReactNode;
 }) {
   const router = useRouter();
   const [confirmando, setConfirmando] = useState(false);
@@ -54,7 +54,7 @@ export function NegocioClient({ negocio, usuarios, credito, llave, informes }: {
     <CreditoNegocio {...credito} />
     {informes}
     <LlaveIa titulo="Llave de IA del negocio" ruta={`${ruta}/ai-key`} inicial={llave} revocable />
-    <section className="space-y-3"><h2 className="text-lg font-semibold">Usuarios del negocio</h2><ListaUsuarios usuarios={usuarios} /></section>
+    <section className="space-y-3"><h2 className="text-lg font-semibold">Usuarios del negocio</h2>{sesiones}<Link className="block text-sm text-primary underline" href={`/platform/accesos?organizationId=${encodeURIComponent(negocio.id)}#sesiones`}>Ver accesos del negocio</Link><ListaUsuarios usuarios={usuarios} /></section>
     {confirmando && <ConfirmarConMotivo titulo={suspendido ? "Reactivar" : "Suspender"} conMotivo={!suspendido}
       descripcion={suspendido ? `Se restablecerá el acceso a ${negocio.name}.` : `Se suspenderá ${negocio.name} y se cerrarán las sesiones de sus usuarios.`}
       onCerrar={() => setConfirmando(false)} onConfirmar={async (motivo) => {

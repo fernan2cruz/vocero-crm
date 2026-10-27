@@ -11,7 +11,7 @@ export function SelectorPeriodo({ desde, hasta }: { desde: string; hasta: string
   const [pendiente, iniciar] = useTransition();
   function aplicar(dias?: number) {
     const nuevos = new URLSearchParams(parametros.toString());
-    for (const clave of ["days", "from", "to"]) nuevos.delete(clave);
+    for (const clave of ["days", "from", "to", "antes"]) nuevos.delete(clave);
     if (dias) nuevos.set("days", String(dias));
     else { nuevos.set("from", from); nuevos.set("to", to); }
     iniciar(() => router.push(`${ruta}?${nuevos}`));

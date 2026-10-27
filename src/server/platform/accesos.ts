@@ -26,8 +26,8 @@ export async function registrarAcceso(input: {
     const db = getDb();
     // Solo se guarda lo que PARECE un correo: es común que alguien escriba su
     // contraseña en el campo de correo, y esa jamás debe quedar en el registro.
-    const crudo = typeof input.email === "string" ? input.email.trim().toLowerCase().slice(0, 254) : null;
-    const email = crudo && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(crudo) ? crudo : null;
+    const crudo = typeof input.email === "string" ? input.email.trim().toLowerCase() : null;
+    const email = crudo && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(crudo) ? crudo.slice(0, 254) : null;
     // Resolver únicamente identidad y membresía permite filtrar fallos por negocio.
     const identidades = await db.select({ userId: schema.user.id, email: schema.user.email,
       organizationId: schema.member.organizationId }).from(schema.user)

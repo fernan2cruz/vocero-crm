@@ -4,7 +4,8 @@ import Link from "next/link";
 import { Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
-import { etiquetaRol, formatoFecha } from "@/lib/platform-ui";
+import { formatoFecha } from "@/lib/platform-ui";
+import { SelectorRol } from "./selector-rol";
 import { AccionesUsuario } from "./acciones-usuario";
 import { InsigniaEstado } from "./insignia-estado";
 
@@ -25,7 +26,7 @@ export function ListaUsuarios({ usuarios, global = false }: { usuarios: UsuarioP
         <tbody>{usuarios.map((u) => <tr key={`${u.id}-${u.organizationId ?? ""}`} className="border-b last:border-0">
           <td className="p-3"><span className="break-words">{u.name}</span>{u.esSuperadmin && <Badge className="mt-1">Superadmin</Badge>}</td>
           <td className="break-all p-3">{u.email}</td>{global && <td className="p-3">{negocio(u)}</td>}
-          <td className="p-3">{etiquetaRol(u.role)}</td><td className="p-3"><InsigniaEstado estado={u.disabled ? "disabled" : "active"} /></td>
+          <td className="p-3"><SelectorRol usuario={u} /></td><td className="p-3"><InsigniaEstado estado={u.disabled ? "disabled" : "active"} /></td>
           {global && <td className="p-3">{formatoFecha(u.ultimaSesion ?? null)}</td>}
           <td className="p-3"><AccionesUsuario usuario={u} /></td>
         </tr>)}</tbody>
@@ -34,7 +35,7 @@ export function ListaUsuarios({ usuarios, global = false }: { usuarios: UsuarioP
     <ul className="space-y-3 lg:hidden">{usuarios.map((u) => <li key={`${u.id}-${u.organizationId ?? ""}`} className="space-y-3 rounded-xl border bg-card p-4">
       <div className="flex flex-wrap items-center gap-2"><span className="break-words font-semibold">{u.name}</span>{u.esSuperadmin && <Badge>Superadmin</Badge>}<InsigniaEstado estado={u.disabled ? "disabled" : "active"} /></div>
       <p className="break-all text-sm text-muted-foreground">{u.email}</p>
-      <dl className="space-y-2 text-sm"><div><dt className="text-muted-foreground">Rol</dt><dd>{etiquetaRol(u.role)}</dd></div>
+      <dl className="space-y-2 text-sm"><div><dt className="text-muted-foreground">Rol</dt><dd><SelectorRol usuario={u} /></dd></div>
         {global && <><div><dt className="text-muted-foreground">Negocio</dt><dd>{negocio(u)}</dd></div><div><dt className="text-muted-foreground">Última sesión</dt><dd>{formatoFecha(u.ultimaSesion ?? null)}</dd></div></>}
       </dl>
       <AccionesUsuario usuario={u} />

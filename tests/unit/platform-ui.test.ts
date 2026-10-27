@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+import { createElement } from "react";
 import { etiquetaEstado, etiquetaRol, formatoFecha, formatearMicros, usdAMicros, urlConFiltros, validarMotivo, formatearDuracion, etiquetaRiesgo, proporcion, parametrosDePeriodo } from "@/lib/platform-ui";
+import { accionesPlataforma, etiquetaAccion, resumenDetalle, navegadorLegible, etiquetaResultadoAcceso } from "@/lib/platform-ui";
 
 const informes = vi.hoisted(() => ({ guardia: vi.fn(), consumo: vi.fn(), serie: vi.fn(), modelos: vi.fn(), productividad: vi.fn(), resumen: vi.fn() }));
 vi.mock("@/server/platform/guard", () => ({ requireSuperadmin: informes.guardia, PlataformaNoEncontrada: class extends Error {} }));
@@ -8,17 +10,103 @@ vi.mock("@/server/platform/consumo", () => ({ consumoPorNegocio: informes.consum
 vi.mock("@/server/platform/productividad", () => ({ productividadPorNegocio: informes.productividad }));
 vi.mock("@/server/platform/resumen", () => ({ resumenPlataforma: informes.resumen }));
 vi.mock("@/components/platform/selector-periodo", () => ({ SelectorPeriodo: () => null }));
-vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("404"); } }));
+vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("404"); }, useRouter: () => ({ refresh: vi.fn() }) }));
+
+const seguridad = vi.hoisted(() => ({ alertas: vi.fn(), eventos: vi.fn(), sesiones: vi.fn(), auditoria: vi.fn(), negocios: vi.fn(), usuarios: vi.fn() }));
+vi.mock("@/server/platform/accesos", () => ({ alertasDeAcceso: seguridad.alertas, eventosDeAcceso: seguridad.eventos }));
+vi.mock("@/server/platform/sesiones", () => ({ listarSesiones: seguridad.sesiones }));
+vi.mock("@/server/platform/auditoria", () => ({ buscarAuditoria: seguridad.auditoria }));
+vi.mock("@/server/platform/tenants", () => ({ listarNegocios: seguridad.negocios }));
+vi.mock("@/server/platform/users", () => ({ listarUsuarios: seguridad.usuarios }));
 
 import ResumenPage from "@/app/(platform)/platform/page";
 import ConsumoPage from "@/app/(platform)/platform/consumo/page";
 import ProductividadPage from "@/app/(platform)/platform/productividad/page";
 import { PlataformaNoEncontrada } from "@/server/platform/guard";
+import AccesosPage from "@/app/(platform)/platform/accesos/page";
+import AuditoriaPage from "@/app/(platform)/platform/auditoria/page";
+import { SelectorRol } from "@/components/platform/selector-rol";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  informes.guardia.mockResolvedValue(undefined);
+  informes.guardia.mockResolvedValue({ userId: "admin" });
+  seguridad.alertas.mockResolvedValue({ porIp: [], porCorreo: [] });
+  for (const f of [seguridad.eventos, seguridad.sesiones, seguridad.auditoria, seguridad.negocios, seguridad.usuarios]) f.mockResolvedValue([]);
   informes.consumo.mockResolvedValue([]); informes.serie.mockResolvedValue([]); informes.modelos.mockResolvedValue([]); informes.productividad.mockResolvedValue([]);
+});
+
+describe("accesos y auditoría", () => {
+  const fechas = { from: "2026-10-01", to: "2026-10-07" };
+  it.each([AccesosPage, AuditoriaPage])("aplica la guardia antes de consultar metadatos", async (pagina) => {
+    informes.guardia.mockRejectedValueOnce(new PlataformaNoEncontrada());
+    await expect(pagina({ searchParams: Promise.resolve(fechas) })).rejects.toThrow("404");
+    for (const f of Object.values(seguridad)) expect(f).not.toHaveBeenCalled();
+  });
+  it("mantiene alertas visibles con filtros y fechas inválidos sin ejecutar consultas inválidas", async () => {
+    const html = renderToStaticMarkup(await AccesosPage({ searchParams: Promise.resolve({ days: "367", kind: "otro", userId: ["a", "b"] }) }));
+    expect(html).toContain("Sin intentos sospechosos en las últimas 24 h");
+    expect(html).toContain('id="sesiones"'); expect(html).toContain('id="inicios"');
+    expect(seguridad.sesiones).not.toHaveBeenCalled(); expect(seguridad.eventos).not.toHaveBeenCalled();
+  });
+  it("aplica negocio, usuario y resultado a las consultas correspondientes", async () => {
+    await AccesosPage({ searchParams: Promise.resolve({ ...fechas, organizationId: "org_a", userId: "u_a", kind: "failure" }) });
+    expect(seguridad.sesiones).toHaveBeenCalledWith({ organizationId: "org_a", userId: "u_a", limit: 200 });
+    expect(seguridad.eventos).toHaveBeenCalledWith(expect.objectContaining({ organizationId: "org_a", kind: "failure", desde: new Date("2026-10-01T00:00:00Z") }));
+  });
+  it("pagina auditoría con cursor y conserva filtros en CSV sin limitarlo al cursor", async () => {
+    const fila = { id: "pa_50", createdAt: new Date("2026-10-05T10:00:00Z"), actorName: "Ana", actorEmail: "ana@example.test", targetName: "Luis", targetEmail: null, organizationName: "Tienda", action: "user.role", detail: { from: "owner", to: "admin", token: "secreto" } };
+    seguridad.auditoria.mockResolvedValue(Array.from({ length: 51 }, (_, i) => ({ ...fila, id: `pa_${i}` })));
+    const antes = "2026-10-06T10:00:00.000Z|pa_antes";
+    const html = renderToStaticMarkup(await AuditoriaPage({ searchParams: Promise.resolve({ ...fechas, organizationId: "org_a", actorUserId: "u_a", accion: "user.role", antes }) }));
+    expect(seguridad.auditoria).toHaveBeenCalledWith(expect.objectContaining({ antes, limit: 51, organizationId: "org_a", actorUserId: "u_a", accion: "user.role" }));
+    expect(html).toContain("Propietario → Administrador"); expect(html).not.toContain("secreto");
+    expect(html).toContain("Cargar más"); expect(html).toContain("antes=2026-10-05T10%3A00%3A00.000Z%7Cpa_49");
+    expect(html).toContain('/api/platform/audit/export?from=2026-10-01&amp;to=2026-10-07&amp;organizationId=org_a&amp;accion=user.role&amp;actorUserId=u_a"');
+  });
+  it("rechaza cursor o filtro repetido sin consultar auditoría ni ofrecer exportación", async () => {
+    const html = renderToStaticMarkup(await AuditoriaPage({ searchParams: Promise.resolve({ ...fechas, antes: "basura", accion: ["a", "b"] }) }));
+    expect(seguridad.auditoria).not.toHaveBeenCalled(); expect(html).toContain('role="alert"'); expect(html).not.toContain("Exportar CSV");
+  });
+  it("solo permite seleccionar roles a usuarios con membresía que no sean superadmin", () => {
+    const usuario = { id: "u", name: "Ana", role: "owner", esSuperadmin: false };
+    expect(renderToStaticMarkup(createElement(SelectorRol, { usuario }))).toContain("select");
+    expect(renderToStaticMarkup(createElement(SelectorRol, { usuario: { ...usuario, esSuperadmin: true } }))).not.toContain("select");
+    expect(renderToStaticMarkup(createElement(SelectorRol, { usuario: { ...usuario, role: null } }))).toContain("Sin rol");
+  });
+});
+
+describe("ayudas de seguridad", () => {
+  it("traduce todas las acciones del contrato y tolera acciones futuras y claves de Object", () => {
+    expect(Object.values(accionesPlataforma)).toEqual(["Otorgar superadmin", "Retirar superadmin", "Crear negocio", "Suspender negocio", "Reactivar negocio", "Ajustar crédito", "Guardar llave de IA", "Revocar llave de IA", "Cambiar modo de IA", "Cambiar precio de IA", "Cerrar sesiones", "Desactivar usuario", "Reactivar usuario", "Cambiar rol", "Reiniciar contraseña", "Editar notas del negocio"]);
+    for (const [a, texto] of Object.entries(accionesPlataforma)) expect(etiquetaAccion(a)).toBe(texto);
+    for (const a of ["futura.accion", "toString", "__proto__"]) expect(etiquetaAccion(a)).toBe(a);
+  });
+  it("resume motivos, roles, dinero exacto y sesiones sin volcar campos desconocidos", () => {
+    expect(resumenDetalle("org.suspend", { reason: "Revisión" })).toBe("Motivo: Revisión");
+    expect(resumenDetalle("user.role", { from: "owner", to: "member" })).toBe("Propietario → Miembro");
+    expect(resumenDetalle("credit.adjust", { amountMicros: -500000, balanceAfter: 1, note: "Corrección" })).toBe("Nota: Corrección · Monto: −$0.50 USD · Saldo después: $0.000001 USD");
+    expect(resumenDetalle("session.revoke", { n: 3, scope: "org" })).toBe("3 sesiones cerradas · Alcance: negocio");
+    expect(resumenDetalle("ai.mode", { aiMode: "own_key" })).toBe("Llave propia");
+    expect(resumenDetalle("ai.mode", { aiMode: "platform" })).toBe("IA de plataforma");
+    expect(resumenDetalle("ai.price", { model: "modelo", inputPerMillionMicros: 1000000, outputPerMillionMicros: 2000000 })).toBe("Modelo: modelo · Entrada por millón de tokens: $1.00 USD · Salida por millón de tokens: $2.00 USD");
+    expect(resumenDetalle("ai_key.set", { scope: "platform", token: "secreto", last4: "1234" })).toBe("Llave de plataforma");
+    expect(resumenDetalle("org.create", { name: "Tienda", ownerEmail: "a@b.test" })).toBe("Nombre: Tienda · Propietario: a@b.test");
+    expect(resumenDetalle("org.notes", { notes: null })).toBe("Notas eliminadas");
+    for (const d of [null, [], "crudo", 5]) expect(resumenDetalle("nueva", d)).toBe("Sin detalle");
+    expect(resumenDetalle("credit.adjust", { amountMicros: Infinity, token: "secreto", reason: {} })).toBe("Sin detalle adicional");
+  });
+  it.each([
+    [null, "Sin registro"], ["", "Sin registro"], ["Mozilla/5.0 (Windows NT 10.0) Chrome/120.0 Safari/537.36", "Chrome en Windows"],
+    ["Mozilla/5.0 (Windows NT 10.0) Chrome/120 Safari/537.36 Edg/120", "Edge en Windows"],
+    ["Mozilla/5.0 (Linux; Android 13) Chrome/120 OPR/99", "Opera en Android"], ["Mozilla/5.0 (Linux) Firefox/120", "Firefox en Linux"],
+    ["Mozilla/5.0 (iPhone) Version/17.0 Safari/605", "Safari en iOS"], ["Mozilla/5.0 (Macintosh) Version/17.0 Safari/605", "Safari en macOS"],
+    ["Mozilla/5.0 (iPad) CriOS/120 Safari/605", "Chrome en iOS"], ["Mozilla/5.0 (iPhone) FxiOS/120", "Firefox en iOS"],
+    ["agente desconocido", "agente desconocido"], ["x".repeat(110), "x".repeat(100) + "…"],
+  ])("presenta el navegador %s", (ua, esperado) => expect(navegadorLegible(ua)).toBe(esperado));
+  it("traduce éxitos y todos los motivos de fallo con respaldo seguro", () => {
+    expect(etiquetaResultadoAcceso("success", null)).toBe("Correcto");
+    expect(["bad_credentials", "disabled", "suspended", "rate_limited", null, "nuevo"].map((r) => etiquetaResultadoAcceso("failure", r))).toEqual(["Contraseña incorrecta", "Desactivada", "Suspendido", "Demasiados intentos", "Fallido", "Fallido"]);
+  });
 });
 
 describe("pantallas de informes en el servidor", () => {
