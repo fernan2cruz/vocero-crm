@@ -18,6 +18,7 @@ export type PlatformAction =
   | "ai_key.revoke"
   | "session.revoke"
   | "user.disable"
+  | "user.role"
   | "user.password_reset"
   | "org.notes"
   | "user.enable";

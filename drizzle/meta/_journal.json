@@ -218,6 +218,13 @@
       "when": 1793133979126,
       "tag": "0030_usuarios_plataforma",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1793139581528,
+      "tag": "0031_accesos",
+      "breakpoints": true
     }
   ]
 }

@@ -13,6 +13,7 @@ import {
 import { isPublicSignupAllowed } from "@/server/auth/registration";
 import { plataformaEnabled } from "@/server/platform/flag";
 import { usuarioDesactivado, estadoDeNegocio } from "@/server/platform/estado";
+import { motivoDeErrorAcceso, registrarAcceso } from "@/server/platform/accesos";
 
 /**
  * Contexto interno del proceso: permite que el alta de cuentas de equipo
@@ -72,6 +73,11 @@ function createAuth() {
           const ip = clientIp(ctx.headers);
           const result = checkRateLimit(`${ctx.path}:${ip}`, AUTH_RATE_LIMIT);
           if (!result.allowed) {
+            // Better Auth retorna desde before sin ejecutar after en este caso.
+            if (plataformaEnabled() && ctx.path === "/sign-in/email") {
+              void registrarAcceso({ kind: "failure", reason: "rate_limited", email: ctx.body?.email,
+                ip, userAgent: ctx.headers?.get("user-agent") });
+            }
             throw new APIError("TOO_MANY_REQUESTS", {
               message: "Demasiados intentos; espera unos minutos",
             });
@@ -85,6 +91,15 @@ function createAuth() {
                 "El registro está cerrado: esta instancia ya tiene su organización",
             });
           }
+        }
+      }),
+      after: createAuthMiddleware(async (ctx) => {
+        if (!plataformaEnabled() || ctx.path !== "/sign-in/email") return;
+        const reason = motivoDeErrorAcceso(ctx.context.returned);
+        if (reason) {
+          // La escritura tiene su propio catch y no alarga la respuesta de auth.
+          void registrarAcceso({ kind: "failure", reason, email: ctx.body?.email,
+            ip: clientIp(ctx.headers), userAgent: ctx.headers?.get("user-agent") });
         }
       }),
     },
@@ -111,6 +126,13 @@ function createAuth() {
             return {
               data: { ...session, activeOrganizationId: organizationId },
             };
+          },
+          after: async (session, ctx) => {
+            if (!plataformaEnabled()) return;
+            void registrarAcceso({ kind: "success", userId: session.userId,
+              organizationId: typeof session.activeOrganizationId === "string" ? session.activeOrganizationId : null,
+              ip: clientIp(ctx?.headers),
+              userAgent: ctx?.headers?.get("user-agent") ?? session.userAgent });
           },
         },
       },

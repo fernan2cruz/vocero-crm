@@ -1584,6 +1584,28 @@ export const platformAdmin = pgTable("platform_admin", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+/** Historial global: sobrevive al usuario o negocio, sin guardar secretos de auth. */
+export const loginEvent = pgTable("login_event", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+  email: text("email"),
+  organizationId: text("organization_id").references(() => organization.id, { onDelete: "set null" }),
+  kind: text("kind", { enum: ["success", "failure"] }).notNull(),
+  reason: text("reason", { enum: ["bad_credentials", "disabled", "suspended", "rate_limited"] }),
+  ip: text("ip"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  index("login_event_created_idx").on(t.createdAt),
+  index("login_event_org_created_idx").on(t.organizationId, t.createdAt),
+  index("login_event_user_created_idx").on(t.userId, t.createdAt),
+  index("login_event_ip_created_idx").on(t.ip, t.createdAt),
+  check("login_event_email_ck", sql`length(${t.email}) <= 254 and ${t.email} = lower(${t.email})`),
+  check("login_event_user_agent_ck", sql`length(${t.userAgent}) <= 300`),
+  check("login_event_kind_ck", sql`${t.kind} in ('success', 'failure')`),
+  check("login_event_reason_ck", sql`${t.reason} in ('bad_credentials', 'disabled', 'suspended', 'rate_limited')`),
+]);
+
 /** La ausencia de fila conserva el acceso de las cuentas existentes. */
 export const userPlatform = pgTable("user_platform", {
   userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),

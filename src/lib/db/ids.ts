@@ -52,6 +52,7 @@ const prefixes = {
   aiUsage: "use",
   aiCreditLedger: "led",
   platformAudit: "aud",
+  loginEvent: "lev",
 } as const;
 
 export type IdKind = keyof typeof prefixes;
