@@ -232,3 +232,39 @@ aceptación y qué NO tocar), Codex implementa en un worktree aparte
 (`feat/065-plataforma-superadmin`), y Claude revisa el diff completo, corre
 `pnpm typecheck && pnpm lint && pnpm test` y la prueba de comportamiento antes
 de aceptar. Una tarea que Codex entregue sin pasar eso no está hecha.
+
+## Estado (2026-10-27, pausa)
+
+**Hecho y verificado** (suite 1755/1755, tsc y eslint limpios; flujos probados contra
+Postgres real y la imagen Docker con `PLATAFORMA=on`):
+
+- S1–S4: banderas, superadmin, negocios, usuarios, llaves y crédito de IA por negocio,
+  consumo, productividad, resumen con riesgo, cerebro por negocio (credencial derivada).
+- S5.1/S5.2: accesos (alertas, sesiones activas, inicios de sesión), auditoría
+  append-only, cambio de rol y cierre de sesiones, todo con sus pantallas.
+- B (alertas de crédito): al cruzar el umbral (saldo < 20 % de lo acreditado) y al
+  agotarse se escribe `credit.low` / `credit.depleted` en la auditoría (una vez por
+  cruce, fuera de la transacción del cobro: una alerta que falle no deshace un cobro);
+  el propietario ve un aviso ANTES de que se agote. Al llegar a cero el agente ya se
+  pausaba solo (402 `sin_saldo` → conversación a una persona).
+- A (Nea multi-negocio por `/api/bot/*`): ver `docs/plataforma-cerebro.md` y el CHANGELOG
+  de `nea-agent/` (superficie `CRM_SURFACE=bot`). El código vive en `nea-agent/`, que es
+  una copia local sin versionar en este repositorio.
+
+**Pendiente, de más a menos urgente**
+
+1. **Seguridad del superadmin (S6)**: pedir de nuevo la contraseña en acciones
+   destructivas, 2FA, lista de IPs permitidas, sesión corta en la plataforma, y
+   programar `purgarAccesosAntiguos`.
+2. **Límites por negocio (C)**: mensajes por día, destinatarios por campaña, tope de
+   gasto. El envío de campañas lleva su `enCurso` en memoria del proceso: con varias
+   réplicas hay que reclamarlo en la base.
+3. **Catálogo de permisos y roles (E)**: hoy hay tres roles fijos (propietario,
+   administrador, miembro). Falta decidir el catálogo de permisos y si los propietarios
+   pueden invitar personal bajo un tope.
+4. **Opcionales (F)**: planes, anuncios, «ver como» de solo lectura, banderas por
+   negocio, puntaje de salud del negocio.
+5. **Revisar**: los webhooks de Instagram, Messenger y TikTok no se auditaron para el
+   enrutamiento multi-negocio; cachear las consultas extra por petición
+   (`usuarioDesactivado`, `estadoDeNegocio`); pulido menor (plural «1 llamadas», «USD»
+   repetido en productividad).
