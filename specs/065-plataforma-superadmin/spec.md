@@ -247,8 +247,12 @@ Postgres real y la imagen Docker con `PLATAFORMA=on`):
   cruce, fuera de la transacción del cobro: una alerta que falle no deshace un cobro);
   el propietario ve un aviso ANTES de que se agote. Al llegar a cero el agente ya se
   pausaba solo (402 `sin_saldo` → conversación a una persona).
-- A (Nea multi-negocio por `/api/bot/*`): ver `docs/plataforma-cerebro.md` y el CHANGELOG
-  de `nea-agent/` (superficie `CRM_SURFACE=bot`). El código vive en `nea-agent/`, que es
+- A (Nea multi-negocio por `/api/bot/*`): Nea ya sabe hablar con este CRM con
+  `CRM_SURFACE=bot` (credencial derivada + id del negocio en la cabecera; piensa por
+  `/api/bot/llm`, nunca con una llave propia). Verificado: pytest de Nea 543 OK, 30
+  omitidas, y el vector de la credencial coincide con el del CRM. NO verificado: una
+  conversación de punta a punta entre Nea y este CRM con dos negocios. Ver
+  `docs/plataforma-cerebro.md`. El código vive en `nea-agent/`, que es
   una copia local sin versionar en este repositorio.
 
 **Pendiente, de más a menos urgente**
