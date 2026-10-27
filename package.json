@@ -24,6 +24,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "seed:demo": "esbuild scripts/seed/demo.ts --bundle --platform=node --format=esm --outfile=.tmp-seed-demo.mjs --alias:@=./src --packages=external && node .tmp-seed-demo.mjs",
+    "platform:grant": "esbuild scripts/platform-grant.ts --bundle --platform=node --format=esm --outfile=.tmp-platform-grant.mjs --alias:@=./src --packages=external && node .tmp-platform-grant.mjs",
     "init-env": "esbuild scripts/init-env.ts --bundle --platform=node --format=esm --outfile=.tmp-init-env.mjs --alias:@=./src --log-level=warning && node .tmp-init-env.mjs",
     "doctor": "esbuild scripts/doctor.ts --bundle --platform=node --format=esm --outfile=.tmp-doctor.mjs --alias:@=./src --log-level=warning --banner:js=\"import { createRequire } from 'module'; const require = createRequire(import.meta.url);\" && node .tmp-doctor.mjs"
   },

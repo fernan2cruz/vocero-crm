@@ -204,6 +204,13 @@
       "when": 1793130367206,
       "tag": "0028_campaigns",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1793132900268,
+      "tag": "0029_plataforma",
+      "breakpoints": true
     }
   ]
 }

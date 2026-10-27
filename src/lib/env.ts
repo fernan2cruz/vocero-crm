@@ -33,6 +33,9 @@ export const envSchema = z.object({
   // 015: motor de agenda. Apagado por defecto — sin el, toda la superficie de
   // agenda responde 404 y la UI no la menciona. Ej.: AGENDA=on
   AGENDA: z.string().optional(),
+  // 065: portal de superadmin. Apagado por defecto; sin ella toda la
+  // superficie de plataforma responde 404. Ej.: PLATAFORMA=on
+  PLATAFORMA: z.string().optional(),
   // 016: atribucion de anuncios y reporte a la Conversions API de Meta.
   // Apagada por defecto: sin ella no se captura de que anuncio vino una
   // conversacion, no se le reporta nada a Meta y la superficie da 404.

@@ -1,4 +1,5 @@
 import {
+  bigint,
   boolean,
   check,
   index,
@@ -1568,4 +1569,116 @@ export const campaignRecipient = pgTable(
     uniqueIndex("campaign_recipient_uq").on(t.campaignId, t.contactId),
     index("campaign_recipient_status_idx").on(t.campaignId, t.status),
   ]
+);
+
+/* ============================================================
+ * 065 — Plataforma (por encima de las organizaciones; sin scoped()).
+ * Las tablas se crean siempre; PLATAFORMA solo decide la superficie visible.
+ * ============================================================ */
+
+/** La membresía de plataforma es independiente de cualquier negocio. */
+export const platformAdmin = pgTable("platform_admin", {
+  userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+  /** NULL identifica el bootstrap por consola; borrar al actor no borra el alta. */
+  grantedBy: text("granted_by").references(() => user.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+/** Sin fila, el negocio conserva su comportamiento previo: activo y con llave propia. */
+export const organizationPlatform = pgTable("organization_platform", {
+  organizationId: text("organization_id").primaryKey()
+    .references(() => organization.id, { onDelete: "cascade" }),
+  status: text("status", { enum: ["active", "suspended"] }).notNull().default("active"),
+  aiMode: text("ai_mode", { enum: ["own_key", "platform"] }).notNull().default("own_key"),
+  suspendedAt: timestamp("suspended_at"),
+  suspendedReason: text("suspended_reason"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+/** Fila única; la llave solo existe cifrada, nunca como texto recuperable por la UI. */
+export const platformSettings = pgTable(
+  "platform_settings",
+  {
+    id: integer("id").primaryKey().default(1),
+    aiProvider: text("ai_provider"),
+    aiBaseUrl: text("ai_base_url"),
+    aiModel: text("ai_model"),
+    tokenCipher: text("token_cipher"),
+    tokenIv: text("token_iv"),
+    tokenTag: text("token_tag"),
+    tokenLast4: text("token_last4"),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [check("platform_settings_singleton_ck", sql`${t.id} = 1`)]
+);
+
+/** Micro-dólares enteros: el saldo no introduce redondeos de moneda flotante. */
+export const aiCreditAccount = pgTable("ai_credit_account", {
+  organizationId: text("organization_id").primaryKey()
+    .references(() => organization.id, { onDelete: "cascade" }),
+  balanceMicros: bigint("balance_micros", { mode: "number" }).notNull().default(0),
+});
+
+/** Libro append-only: una corrección es otro asiento, nunca reescribir el anterior. */
+export const aiCreditLedger = pgTable(
+  "ai_credit_ledger",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id").notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    kind: text("kind", { enum: ["grant", "usage", "adjust", "refund"] }).notNull(),
+    amountMicros: bigint("amount_micros", { mode: "number" }).notNull(),
+    balanceAfter: bigint("balance_after", { mode: "number" }).notNull(),
+    ref: text("ref"),
+    note: text("note"),
+    actorUserId: text("actor_user_id").references(() => user.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("ai_credit_ledger_org_created_idx").on(t.organizationId, t.createdAt),
+    check("ai_credit_ledger_amount_ck", sql`${t.amountMicros} <> 0`),
+  ]
+);
+
+/** Respaldo cuando el proveedor no reporta costo; precios por millón de tokens. */
+export const aiModelPrice = pgTable("ai_model_price", {
+  model: text("model").primaryKey(),
+  inputPerMillionMicros: bigint("input_per_million_micros", { mode: "number" }).notNull(),
+  outputPerMillionMicros: bigint("output_per_million_micros", { mode: "number" }).notNull(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+/** Solo metadatos de consumo: jamás prompts ni mensajes de clientes. */
+export const aiUsage = pgTable(
+  "ai_usage",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id").notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    source: text("source", { enum: ["bot", "lab", "judge"] }).notNull(),
+    model: text("model").notNull(),
+    promptTokens: integer("prompt_tokens").notNull(),
+    completionTokens: integer("completion_tokens").notNull(),
+    costMicros: bigint("cost_micros", { mode: "number" }).notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("ai_usage_org_created_idx").on(t.organizationId, t.createdAt)]
+);
+
+/** Auditoría append-only. Los actores pueden desaparecer sin borrar el hecho. */
+export const platformAudit = pgTable(
+  "platform_audit",
+  {
+    id: text("id").primaryKey(),
+    actorUserId: text("actor_user_id").references(() => user.id, { onDelete: "set null" }),
+    action: text("action").notNull(),
+    /** NULL en acciones globales o tras borrar el negocio: el hecho debe sobrevivirle. */
+    organizationId: text("organization_id")
+      .references(() => organization.id, { onDelete: "set null" }),
+    targetUserId: text("target_user_id").references(() => user.id, { onDelete: "set null" }),
+    detail: jsonb("detail").$type<Record<string, unknown>>().notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("platform_audit_org_created_idx").on(t.organizationId, t.createdAt)]
 );

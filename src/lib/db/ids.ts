@@ -48,6 +48,10 @@ const prefixes = {
   contactSale: "vta",
   campaign: "cmp",
   campaignRecipient: "cmr",
+  // 065 — consumo, crédito y auditoría de plataforma
+  aiUsage: "use",
+  aiCreditLedger: "led",
+  platformAudit: "aud",
 } as const;
 
 export type IdKind = keyof typeof prefixes;
