@@ -1,6 +1,7 @@
 import { count, eq, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { newId } from "@/lib/db/ids";
+import { plataformaEnabled } from "@/server/platform/flag";
 
 /** Etapas sembradas del pipeline (US2). */
 const SEED_STAGES: { name: string; kind: "open" | "won" | "lost" }[] = [
@@ -20,6 +21,7 @@ const SEED_STAGES: { name: string; kind: "open" | "won" | "lost" }[] = [
  * dos registros simultáneos en instancia vacía creen dos organizaciones.
  */
 export async function onUserCreated(userId: string, userName: string) {
+  if (plataformaEnabled()) return;
   const db = getDb();
   await db.transaction(async (tx) => {
     // Lock transaccional de "primer arranque" (clave arbitraria fija):
@@ -30,32 +32,46 @@ export async function onUserCreated(userId: string, userName: string) {
       .from(schema.organization);
     if ((orgs?.n ?? 0) > 0) return;
 
-    const orgId = newId("organization");
-    await tx.insert(schema.organization).values({
-      id: orgId,
+    await sembrarNegocio(tx, {
       name: userName ? `Negocio de ${userName}` : "Mi negocio",
+      ownerUserId: userId,
       slug: "principal",
     });
-    await tx.insert(schema.member).values({
-      id: newId("member"),
-      organizationId: orgId,
-      userId,
-      role: "owner",
-    });
-    await tx.insert(schema.pipelineStage).values(
-      SEED_STAGES.map((s, i) => ({
-        id: newId("stage"),
-        organizationId: orgId,
-        name: s.name,
-        position: i,
-        kind: s.kind,
-      }))
-    );
-    await tx.insert(schema.agentProfile).values({
-      id: newId("agentProfile"),
-      organizationId: orgId,
-    });
   });
+}
+
+type Transaction = Parameters<Parameters<ReturnType<typeof getDb>["transaction"]>[0]>[0];
+
+/** Compartir la siembra evita negocios incompletos y conserva el primer arranque. */
+export async function sembrarNegocio(tx: Transaction, input: {
+  name: string; ownerUserId: string; slug?: string;
+}): Promise<string> {
+  const orgId = newId("organization");
+  await tx.insert(schema.organization).values({
+    id: orgId,
+    name: input.name,
+    slug: input.slug ?? orgId,
+  });
+  await tx.insert(schema.member).values({
+    id: newId("member"),
+    organizationId: orgId,
+    userId: input.ownerUserId,
+    role: "owner",
+  });
+  await tx.insert(schema.pipelineStage).values(
+    SEED_STAGES.map((s, i) => ({
+      id: newId("stage"),
+      organizationId: orgId,
+      name: s.name,
+      position: i,
+      kind: s.kind,
+    }))
+  );
+  await tx.insert(schema.agentProfile).values({
+    id: newId("agentProfile"),
+    organizationId: orgId,
+  });
+  return orgId;
 }
 
 /** Organización activa de un usuario (su primera membresía). */

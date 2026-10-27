@@ -1584,6 +1584,15 @@ export const platformAdmin = pgTable("platform_admin", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+/** La ausencia de fila conserva el acceso de las cuentas existentes. */
+export const userPlatform = pgTable("user_platform", {
+  userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+  disabledAt: timestamp("disabled_at").notNull().defaultNow(),
+  disabledReason: text("disabled_reason").notNull(),
+  disabledBy: text("disabled_by").references(() => user.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 /** Sin fila, el negocio conserva su comportamiento previo: activo y con llave propia. */
 export const organizationPlatform = pgTable("organization_platform", {
   organizationId: text("organization_id").primaryKey()

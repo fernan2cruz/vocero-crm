@@ -11,6 +11,8 @@ import {
   resolveActiveOrganizationId,
 } from "@/server/auth/on-signup";
 import { isPublicSignupAllowed } from "@/server/auth/registration";
+import { plataformaEnabled } from "@/server/platform/flag";
+import { usuarioDesactivado, estadoDeNegocio } from "@/server/platform/estado";
 
 /**
  * Contexto interno del proceso: permite que el alta de cuentas de equipo
@@ -97,9 +99,15 @@ function createAuth() {
       session: {
         create: {
           before: async (session) => {
+            if (plataformaEnabled() && await usuarioDesactivado(session.userId)) {
+              throw new APIError("FORBIDDEN", { message: "Cuenta desactivada" });
+            }
             const organizationId = await resolveActiveOrganizationId(
               session.userId
             );
+            if (plataformaEnabled() && organizationId && await estadoDeNegocio(organizationId) === "suspended") {
+              throw new APIError("FORBIDDEN", { message: "Negocio suspendido" });
+            }
             return {
               data: { ...session, activeOrganizationId: organizationId },
             };

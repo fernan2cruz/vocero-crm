@@ -13,6 +13,8 @@ import { getOrCreateConversation } from "@/server/inbox/ingest";
 import { listContacts } from "@/server/contacts-list";
 import { getCredentialsByOrg } from "@/server/whatsapp/credentials";
 import { sendTemplate } from "@/server/whatsapp/templates";
+import { plataformaEnabled } from "@/server/platform/flag";
+import { estadoDeNegocio } from "@/server/platform/estado";
 
 /**
  * 064 — Campañas: una plantilla aprobada a un segmento, con los destinatarios
@@ -292,6 +294,9 @@ export async function enviarCampana(input: {
   confirmCount: number;
 }): Promise<{ ok: true } | CampaignFailure> {
   const { organizationId, id } = input;
+  if (plataformaEnabled() && await estadoDeNegocio(organizationId) === "suspended") {
+    return { ok: false, code: "bad_state", message: "El negocio está suspendido" };
+  }
   const detalle = await obtenerCampana(organizationId, id);
   if (!detalle) return { ok: false, code: "not_found", message: "Campaña no encontrada" };
   if (detalle.status === "done" || detalle.status === "cancelled") {

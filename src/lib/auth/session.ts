@@ -1,6 +1,8 @@
 import { headers } from "next/headers";
 import { getAuth } from "@/lib/auth";
 import { resolveMembership } from "@/server/auth/on-signup";
+import { plataformaEnabled } from "@/server/platform/flag";
+import { usuarioDesactivado, estadoDeNegocio } from "@/server/platform/estado";
 
 export type SessionContext = {
   userId: string;
@@ -23,11 +25,17 @@ export async function requireSession(): Promise<SessionContext> {
   const auth = getAuth();
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) throw new UnauthorizedError();
+  if (plataformaEnabled() && await usuarioDesactivado(session.user.id)) {
+    throw new UnauthorizedError("Cuenta desactivada");
+  }
   // La sesión puede crearse antes de que la membresía exista (registro
   // inicial) — la membresía en BD es la fuente de verdad de org + rol.
   const membership = await resolveMembership(session.user.id);
   if (!membership) {
     throw new UnauthorizedError("Sesión sin organización activa");
+  }
+  if (plataformaEnabled() && await estadoDeNegocio(membership.organizationId) === "suspended") {
+    throw new UnauthorizedError("Negocio suspendido");
   }
   return {
     userId: session.user.id,

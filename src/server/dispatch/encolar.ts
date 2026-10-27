@@ -2,6 +2,8 @@ import { and, eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { encolarDespacho } from "@/server/dispatch/outbox";
 import { iniciarWorker, programarTanda } from "@/server/dispatch/worker";
+import { plataformaEnabled } from "@/server/platform/flag";
+import { estadoDeNegocio } from "@/server/platform/estado";
 
 /**
  * 021 — El enganche de la ingesta: un mensaje entrante real ya está en la
@@ -22,6 +24,7 @@ export async function despacharAlCerebro(
   messageId: string
 ): Promise<void> {
   try {
+    if (plataformaEnabled() && await estadoDeNegocio(organizationId) === "suspended") return;
     const [conv] = await getDb()
       .select({
         aiEnabled: schema.conversation.aiEnabled,
