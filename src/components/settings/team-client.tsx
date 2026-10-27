@@ -17,7 +17,7 @@ type Member = {
   createdAt: string;
 };
 
-export function TeamClient() {
+export function TeamClient({ gestionado = false }: { gestionado?: boolean }) {
   const [members, setMembers] = useState<Member[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -73,7 +73,7 @@ export function TeamClient() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <Card>
+      {gestionado ? <Card><CardHeader><CardTitle>Las cuentas y los permisos de tu equipo los administra la plataforma</CardTitle></CardHeader></Card> : <Card>
         <CardHeader>
           <CardTitle>Crear cuenta de equipo</CardTitle>
           <CardDescription>
@@ -137,7 +137,7 @@ export function TeamClient() {
             {saving ? "Creando…" : "Crear cuenta"}
           </Button>
         </CardContent>
-      </Card>
+      </Card>}
 
       <div className="space-y-2">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">

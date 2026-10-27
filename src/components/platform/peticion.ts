@@ -4,7 +4,7 @@ export class ErrorPlataforma extends Error {
   constructor(public code: string, mensaje: string) { super(mensaje); }
 }
 
-export async function peticion(ruta: string, metodo: "POST" | "PATCH", cuerpo: unknown): Promise<{ contrasenaTemporal?: string }> {
+export async function peticion<T = { contrasenaTemporal?: string }>(ruta: string, metodo: "POST" | "PATCH" | "PUT" | "DELETE", cuerpo?: unknown): Promise<T> {
   let respuesta: Response;
   try {
     respuesta = await fetch(ruta, { method: metodo, headers: { "Content-Type": "application/json" }, body: JSON.stringify(cuerpo) });

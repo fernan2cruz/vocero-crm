@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { formatearMicros } from "@/lib/platform-ui";
 import {
   AI_PROVIDERS,
   AI_PROVIDER_PRESETS,
@@ -43,6 +44,7 @@ type Credencial = {
 };
 
 type Vista = {
+  plataforma?: { gestionada: true; modo: "own_key" | "platform"; saldoMicros: number | null };
   credencial: Credencial | null;
   activa: boolean;
   origen: "org" | "env" | null;
@@ -109,6 +111,15 @@ export function AiClient() {
 
   const preset = AI_PROVIDER_PRESETS[provider];
   const cred = vista?.credencial ?? null;
+
+  if (vista?.plataforma?.gestionada) return <div className="max-w-2xl space-y-6">
+    <Card><CardHeader><CardTitle>La IA de tu negocio la administra la plataforma</CardTitle></CardHeader><CardContent className="space-y-3">
+      <Badge variant={vista.activa ? "success" : "warning"}>{vista.activa ? "Activa" : "Pausada"}</Badge>
+      {vista.mensaje && <p className="text-sm text-muted-foreground">{vista.mensaje}</p>}
+      <p className="text-sm">Modo: {vista.plataforma.modo === "platform" ? "Plataforma" : "Llave propia"}</p>
+      {vista.plataforma.modo === "platform" && vista.plataforma.saldoMicros !== null && <div><p className="text-sm text-muted-foreground">Saldo disponible (USD)</p><p className="break-all text-2xl font-semibold tabular-nums">{formatearMicros(vista.plataforma.saldoMicros)}</p></div>}
+    </CardContent></Card>
+  </div>;
 
   /** Lo que viaja en cada llamada: el token solo si se escribió. */
   function cuerpo(conModelo: boolean) {

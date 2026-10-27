@@ -13,9 +13,12 @@ import { InsigniaEstado } from "./insignia-estado";
 import { ConfirmarConMotivo } from "./confirmar-con-motivo";
 import { ListaUsuarios, type UsuarioPortal } from "./lista-usuarios";
 import { mensajeError, peticion } from "./peticion";
+import { CreditoNegocio, type CreditoNegocioProps } from "./credito-negocio";
+import { LlaveIa, type VistaLlave } from "./llave-ia";
 
-export function NegocioClient({ negocio, usuarios }: {
+export function NegocioClient({ negocio, usuarios, credito, llave }: {
   negocio: NonNullable<Awaited<ReturnType<typeof obtenerNegocio>>>; usuarios: UsuarioPortal[];
+  credito: CreditoNegocioProps; llave: VistaLlave;
 }) {
   const router = useRouter();
   const [confirmando, setConfirmando] = useState(false);
@@ -48,6 +51,8 @@ export function NegocioClient({ negocio, usuarios }: {
         <Button type="submit" disabled={guardando}>{guardando ? "Guardando…" : "Guardar notas"}</Button>
       </form>
     </CardContent></Card>
+    <CreditoNegocio {...credito} />
+    <LlaveIa titulo="Llave de IA del negocio" ruta={`${ruta}/ai-key`} inicial={llave} revocable />
     <section className="space-y-3"><h2 className="text-lg font-semibold">Usuarios del negocio</h2><ListaUsuarios usuarios={usuarios} /></section>
     {confirmando && <ConfirmarConMotivo titulo={suspendido ? "Reactivar" : "Suspender"} conMotivo={!suspendido}
       descripcion={suspendido ? `Se restablecerá el acceso a ${negocio.name}.` : `Se suspenderá ${negocio.name} y se cerrarán las sesiones de sus usuarios.`}
