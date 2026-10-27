@@ -1,4 +1,7 @@
 import { isAiConfiguredByEnv } from "@/lib/env";
+import { plataformaEnabled } from "@/server/platform/flag";
+import { saldoDe } from "@/server/platform/credit";
+import { modoIaDe, proveedorPlataforma } from "@/server/platform/ai-usage";
 import { last4, OPENROUTER_BASE_URL } from "@/lib/ai/presets";
 import {
   getAiCredentialPublic,
@@ -21,7 +24,7 @@ import {
  */
 
 export type AiProvider = {
-  source: "org" | "env";
+  source: "org" | "env" | "platform";
   baseUrl: string;
   model: string;
   judgeModel: string;
@@ -36,6 +39,7 @@ export type EstadoIa =
       motivo: "token_invalido" | "sin_saldo";
       last4: string;
       desde: Date | null;
+      plataforma?: boolean;
     };
 
 export type AiResolution =
@@ -130,6 +134,9 @@ export function resolver(
 export async function resolveAiProvider(
   organizationId?: string
 ): Promise<AiResolution> {
+  if (organizationId && plataformaEnabled() && await modoIaDe(organizationId) === "platform") {
+    return resolverPlataforma(await proveedorPlataforma(), await saldoDe(organizationId));
+  }
   const cred = organizationId
     ? await getAiCredentialSecret(organizationId)
     : null;
@@ -137,6 +144,12 @@ export async function resolveAiProvider(
 }
 
 export async function estadoIaDe(organizationId: string): Promise<EstadoIa> {
+  if (plataformaEnabled() && await modoIaDe(organizationId) === "platform") {
+    const r = resolverPlataforma(await proveedorPlataforma(), await saldoDe(organizationId));
+    // Se conserva el DTO histórico de Ajustes; source del adaptador distingue la llave.
+    // Los últimos 4 de la llave de PLATAFORMA no se enseñan al negocio (S-5).
+    return r.ok ? { activa: true, origen: "org", last4: "" } : r.estado;
+  }
   const cred = await getAiCredentialPublic(organizationId);
   const env = envAiProvider();
   return interpretarCredencial(cred, env ? { last4: last4(env.token) } : null);
@@ -161,6 +174,16 @@ export function mensajeDeEstado(estado: EstadoIa): string | null {
     case "token_invalido":
       return "Tu agente está pausado: el proveedor rechazó tu llave. Revísala en Ajustes → IA.";
     case "sin_saldo":
+      if (estado.plataforma) return "Tu agente está pausado: se agotó el crédito de IA. Contacta a quien administra tu plataforma.";
       return "Tu agente está pausado: tu cuenta del proveedor de IA se quedó sin saldo. Recárgala y pulsa «Probar conexión» en Ajustes → IA.";
   }
+}
+
+/** Pura: sin llave no hay respaldo implícito; el saldo se vuelve a leer en cada llamada. */
+export function resolverPlataforma(provider: AiProvider | null, saldoMicros: number): AiResolution {
+  if (!provider) return { ok: false, estado: { activa: false, motivo: "sin_configurar" } };
+  if (saldoMicros <= 0) return { ok: false, estado: { activa: false, motivo: "sin_saldo",
+    // Sin `last4` real: es la llave de plataforma y el negocio no debe verla (S-5).
+    last4: "", desde: null, plataforma: true } };
+  return { ok: true, provider: { ...provider, source: "platform" } };
 }

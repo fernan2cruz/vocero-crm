@@ -6,6 +6,8 @@ import {
   type EstadoIa,
 } from "@/lib/ai/provider";
 import { marcarEstadoPorRespuesta } from "@/server/ai/credentials";
+import { plataformaEnabled } from "@/server/platform/flag";
+import { extraerUso, registrarUso } from "@/server/platform/ai-usage";
 
 /**
  * Adaptador LLM OpenRouter-compatible — ÚNICA frontera con el proveedor de IA
@@ -62,7 +64,7 @@ export async function chatJson<T>(
       detail: detalleNoConfigurado(resolved.estado),
     };
   }
-  const provider = resolved.provider;
+  let provider = resolved.provider;
   const model =
     opts?.model ?? (opts?.judge ? provider.judgeModel : provider.model);
   if (!model?.trim()) {
@@ -87,12 +89,27 @@ export async function chatJson<T>(
             },
           ];
     try {
-      const raw = await callProvider(
+      // Un reintento también es una llamada: si agotó el crédito, no gasta otra vez.
+      if (attempt > 1 && provider.source === "platform") {
+        const siguiente = await resolveAiProvider(opts?.organizationId);
+        if (!siguiente.ok) return { ok: false, error: "not_configured", detail: detalleNoConfigurado(siguiente.estado) };
+        provider = siguiente.provider;
+      }
+      const respuesta = await callProvider(
         provider,
         model,
         attemptMessages,
         opts?.timeoutMs
       );
+      if (plataformaEnabled() && opts?.organizationId) {
+        try {
+          const uso = extraerUso(respuesta.json, "application/json");
+          if (uso) await registrarUso({ organizationId: opts.organizationId,
+            source: opts.judge ? "judge" : "lab", model, uso, cobrar: provider.source === "platform" });
+        } catch { console.error("[platform] No se pudo medir la respuesta del Laboratorio"); }
+      }
+      const raw = respuesta.content;
+      if (typeof raw !== "string" || raw.length === 0) throw new Error("respuesta del proveedor sin contenido");
       const extracted = extractJson(raw);
       if (extracted === null) {
         lastDetail = `sin JSON extraíble (raw=${truncate(raw)})`;
@@ -161,7 +178,7 @@ async function callProvider(
   model: string,
   messages: ChatMessage[],
   timeoutMs = 60_000
-): Promise<string> {
+): Promise<{ content: string | undefined; json: unknown }> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -183,10 +200,7 @@ async function callProvider(
       choices?: { message?: { content?: string } }[];
     };
     const content = json.choices?.[0]?.message?.content;
-    if (typeof content !== "string" || content.length === 0) {
-      throw new Error("respuesta del proveedor sin contenido");
-    }
-    return content;
+    return { content, json };
   } finally {
     clearTimeout(timer);
   }

@@ -8,6 +8,7 @@ export const crearNegocioSchema = z.object({
   tempPassword: z.string().min(8).max(128).optional(),
 }).strict();
 export const accionNegocioSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("set_ai_mode"), aiMode: z.enum(["own_key", "platform"]) }).strict(),
   z.object({ action: z.literal("suspend"), reason: motivoSchema }).strict(),
   z.object({ action: z.literal("reactivate") }).strict(),
 ]);
@@ -22,4 +23,16 @@ export const accionUsuarioSchema = z.discriminatedUnion("action", [
 export const listarUsuariosSchema = z.object({
   q: z.string().trim().max(200).optional(),
   organizationId: z.string().trim().min(1).max(200).optional(),
+}).strict();
+
+// El ORM usa number para bigint: rechazar lo que JS no puede representar exactamente.
+export const microsSchema = z.number().int().safe();
+export const creditoSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("grant"), amountMicros: microsSchema.positive(), note: z.string().trim().min(3).max(200) }).strict(),
+  z.object({ action: z.literal("adjust"), amountMicros: microsSchema.refine((n) => n !== 0), note: z.string().trim().min(3).max(200) }).strict(),
+]);
+export const precioIaSchema = z.object({
+  model: z.string().trim().min(1).max(200),
+  inputPerMillionMicros: microsSchema.nonnegative(),
+  outputPerMillionMicros: microsSchema.nonnegative(),
 }).strict();

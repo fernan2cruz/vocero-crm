@@ -1,5 +1,7 @@
 import { apiRoot } from "@/lib/ai/presets";
-import { resolveAiProvider } from "@/lib/ai/provider";
+import { resolveAiProvider, mensajeDeEstado } from "@/lib/ai/provider";
+import { plataformaEnabled } from "@/server/platform/flag";
+import { extraerUso, registrarUso } from "@/server/platform/ai-usage";
 import { marcarEstadoPorRespuesta } from "@/server/ai/credentials";
 
 /**
@@ -43,7 +45,9 @@ export async function pensarPorElCerebro(input: {
       status: 402,
       code: "sin_credencial",
       message:
-        r.estado.motivo === "sin_configurar"
+        r.estado.motivo === "sin_saldo" && r.estado.plataforma
+          ? mensajeDeEstado(r.estado)!
+          : r.estado.motivo === "sin_configurar"
           ? "No hay proveedor de IA configurado. Ponlo en Ajustes → IA."
           : "La llave de IA está pausada (el proveedor la rechazó). Revísala en Ajustes → IA.",
     };
@@ -64,6 +68,22 @@ export async function pensarPorElCerebro(input: {
       signal: controller.signal,
     });
     const cuerpo = await res.text();
+    if (res.ok && plataformaEnabled()) {
+      try {
+        const uso = extraerUso(cuerpo, res.headers.get("content-type") ?? "application/json");
+        if (uso) {
+          // Si el proveedor omite el modelo, se usa el pedido, antes que el del perfil.
+          let model = provider.model;
+          try {
+            const pedido: unknown = JSON.parse(input.cuerpoCrudo);
+            if (pedido && typeof pedido === "object" && "model" in pedido
+              && typeof pedido.model === "string" && pedido.model.trim() && pedido.model.length <= 200) model = pedido.model;
+          } catch { /* El proxy sigue aceptando cuerpos opacos. */ }
+          await registrarUso({ organizationId: input.organizationId, source: "bot", model, uso,
+            cobrar: provider.source === "platform" });
+        }
+      } catch { console.error("[platform] No se pudo medir la respuesta del cerebro"); }
+    }
 
     // El estado de la credencial lo dicta quien cobra. El respaldo del
     // entorno no tiene fila que pausar. `.catch`: un fallo al escribir el

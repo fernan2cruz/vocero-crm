@@ -13,6 +13,8 @@ export type PlatformAction =
   | "org.reactivate"
   | "credit.adjust"
   | "ai_key.set"
+  | "ai.mode"
+  | "ai.price"
   | "ai_key.revoke"
   | "session.revoke"
   | "user.disable"
