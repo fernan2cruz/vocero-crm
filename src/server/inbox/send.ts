@@ -1,4 +1,5 @@
 import { and, eq } from "drizzle-orm";
+import { LimiteError, verificarLimiteDiario } from "@/server/platform/limites";
 import { getDb, schema } from "@/lib/db";
 import { newId } from "@/lib/db/ids";
 import { graphRequest, MetaApiError, normalizeRecipient } from "@/lib/meta/client";
@@ -59,6 +60,7 @@ import {
 export class SendError extends Error {
   code:
     | "sandbox_violation"
+    | "limite_diario"
     | "not_connected"
     | "reconnect_required"
     | "window_closed"
@@ -82,6 +84,15 @@ export class SendError extends Error {
 }
 
 type SendResult = { messageId: string };
+
+/** La misma guarda para texto, adjuntos, mensajes estructurados y plantillas. */
+export async function verificarLimiteDeEnvio(organizationId: string, isTest: boolean): Promise<void> {
+  try { await verificarLimiteDiario(organizationId, isTest); }
+  catch (error) {
+    if (error instanceof LimiteError) throw new SendError("limite_diario", error.message);
+    throw error;
+  }
+}
 
 type SendTarget = {
   conversation: typeof schema.conversation.$inferSelect;
@@ -164,6 +175,8 @@ async function prepareSend(
       "Conversación de prueba del Laboratorio: el envío real está prohibido"
     );
   }
+
+  await verificarLimiteDeEnvio(organizationId, row.conversation.isTest);
 
   // 014: Instagram tiene su propio transporte, su propia ventana y NO tiene
   // plantillas. Se resuelve antes que las credenciales de WhatsApp para no

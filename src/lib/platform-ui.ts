@@ -83,6 +83,7 @@ export const accionesPlataforma = {
   "ai.mode": "Cambiar modo de IA", "ai.price": "Cambiar precio de IA", "session.revoke": "Cerrar sesiones",
   "user.disable": "Desactivar usuario", "user.enable": "Reactivar usuario", "user.role": "Cambiar rol",
   "user.password_reset": "Reiniciar contraseña", "org.notes": "Editar notas del negocio",
+  "limits.set": "Cambiar límites del negocio",
 } satisfies Record<PlatformAction, string>;
 
 export function etiquetaAccion(accion: string): string {
@@ -97,7 +98,20 @@ export function resumenDetalle(accion: string, detail: unknown): string {
   const texto = (clave: string, etiqueta: string) => { if (typeof d[clave] === "string" && d[clave].trim()) partes.push(`${etiqueta}: ${d[clave]}`); };
   const monto = (clave: string, etiqueta: string) => { if (typeof d[clave] === "number" && Number.isSafeInteger(d[clave])) partes.push(`${etiqueta}: ${formatearMicros(d[clave])} USD`); };
   texto("reason", "Motivo"); texto("note", "Nota");
-  if (accion === "user.role") {
+  if (accion === "limits.set") {
+    for (const [clave, etiqueta] of [["antes", "Antes"], ["despues", "Después"]]) {
+      const valor = d[clave!];
+      if (!valor || typeof valor !== "object" || Array.isArray(valor)) continue;
+      const limites = valor as Record<string, unknown>;
+      const campos: string[] = [];
+      for (const [campo, nombre] of [["maxMessagesPerDay", "mensajes por día"], ["maxCampaignRecipients", "destinatarios por campaña"], ["maxMonthlySpendMicros", "IA mensual"]]) {
+        const n = limites[campo!];
+        if (n === null) campos.push(`${nombre}: sin límite`);
+        else if (typeof n === "number" && Number.isSafeInteger(n) && n > 0) campos.push(`${nombre}: ${campo === "maxMonthlySpendMicros" ? `${formatearMicros(n)} USD` : n}`);
+      }
+      if (campos.length) partes.push(`${etiqueta}: ${campos.join(", ")}`);
+    }
+  } else if (accion === "user.role") {
     if (typeof d.from === "string" && typeof d.to === "string") partes.push(`${etiquetaRol(d.from)} → ${etiquetaRol(d.to)}`);
   } else if (accion === "credit.adjust") {
     monto("amountMicros", "Monto"); monto("balanceAfter", "Saldo después");

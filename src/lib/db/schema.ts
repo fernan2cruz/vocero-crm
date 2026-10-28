@@ -1645,6 +1645,19 @@ export const platformSettings = pgTable(
 );
 
 /** Micro-dólares enteros: el saldo no introduce redondeos de moneda flotante. */
+export const organizationLimits = pgTable("organization_limits", {
+  organizationId: text("organization_id").primaryKey()
+    .references(() => organization.id, { onDelete: "cascade" }),
+  maxMessagesPerDay: integer("max_messages_per_day"),
+  maxCampaignRecipients: integer("max_campaign_recipients"),
+  maxMonthlySpendMicros: bigint("max_monthly_spend_micros", { mode: "number" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  check("organization_limits_messages_ck", sql`${t.maxMessagesPerDay} > 0`),
+  check("organization_limits_recipients_ck", sql`${t.maxCampaignRecipients} > 0`),
+  check("organization_limits_spend_ck", sql`${t.maxMonthlySpendMicros} > 0`),
+]);
+
 export const aiCreditAccount = pgTable("ai_credit_account", {
   organizationId: text("organization_id").primaryKey()
     .references(() => organization.id, { onDelete: "cascade" }),

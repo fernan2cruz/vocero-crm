@@ -86,6 +86,7 @@ export async function POST(req: Request) {
     return Response.json({ messageId: result.messageId });
   } catch (err) {
     if (err instanceof SendError) {
+      if (err.code === "limite_diario") return apiError(429, err.code, err.message);
       if (err.code === "window_closed") {
         return apiError(409, "window_closed", err.message);
       }

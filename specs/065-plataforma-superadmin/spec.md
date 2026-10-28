@@ -210,6 +210,13 @@ sus créditos».
 - **S6 · Logs y seguridad (PL-10)** y los agentes de IA (PL-3).
 - **S7 · Las recomendaciones de abajo.**
 
+### S7 — Límites por negocio (implementación para revisión)
+
+Contrato, modelo, decisiones de degradación y ambigüedad pendiente del Laboratorio:
+[contracts/limites.md](contracts/limites.md). Incluye máximo diario de mensajes,
+destinatarios por campaña y gasto mensual de IA de plataforma. Guion de revisión
+contra PostgreSQL y navegador: `tests/e2e/us-limites-negocio.md`.
+
 ## Funcionalidades recomendadas (después de S5, por valor)
 
 1. **Alertas de crédito y pausa automática**, con aviso al propietario.
@@ -267,9 +274,13 @@ Postgres real y la imagen Docker con `PLATAFORMA=on`):
 1. **Seguridad del superadmin (S6)**: pedir de nuevo la contraseña en acciones
    destructivas, 2FA, lista de IPs permitidas, sesión corta en la plataforma, y
    programar `purgarAccesosAntiguos`.
-2. **Límites por negocio (C)**: mensajes por día, destinatarios por campaña, tope de
-   gasto. El envío de campañas lleva su `enCurso` en memoria del proceso: con varias
-   réplicas hay que reclamarlo en la base.
+2. **Límites por negocio: HECHO** (mensajes por día, destinatarios por campaña, tope
+   mensual de gasto de IA; 16 verificaciones contra Postgres real y el stack de
+   `deploy/`; los destinatarios por campaña solo con pruebas unitarias). Quedan dos
+   cosas: los conteos son comprobaciones previas, sin reserva de cupo (envíos
+   simultáneos pueden rebasar el tope por unos pocos mensajes), y el envío de campañas
+   lleva su `enCurso` en memoria del proceso: con varias réplicas hay que reclamarlo
+   en la base.
 3. **Catálogo de permisos y roles (E)**: hoy hay tres roles fijos (propietario,
    administrador, miembro). Falta decidir el catálogo de permisos y si los propietarios
    pueden invitar personal bajo un tope.

@@ -15,10 +15,13 @@ import { ListaUsuarios, type UsuarioPortal } from "./lista-usuarios";
 import { mensajeError, peticion } from "./peticion";
 import { CreditoNegocio, type CreditoNegocioProps } from "./credito-negocio";
 import { LlaveIa, type VistaLlave } from "./llave-ia";
+import { LimitesNegocio } from "./limites-negocio";
+import type { Limites, UsoActual } from "@/server/platform/limites";
 
-export function NegocioClient({ negocio, usuarios, credito, llave, informes, sesiones }: {
+export function NegocioClient({ negocio, usuarios, credito, llave, informes, sesiones, limites, uso }: {
   negocio: NonNullable<Awaited<ReturnType<typeof obtenerNegocio>>>; usuarios: UsuarioPortal[];
   credito: CreditoNegocioProps; llave: VistaLlave; informes: React.ReactNode; sesiones?: React.ReactNode;
+  limites: Limites; uso: UsoActual;
 }) {
   const router = useRouter();
   const [confirmando, setConfirmando] = useState(false);
@@ -52,6 +55,7 @@ export function NegocioClient({ negocio, usuarios, credito, llave, informes, ses
       </form>
     </CardContent></Card>
     <CreditoNegocio {...credito} />
+    <LimitesNegocio id={negocio.id} limites={limites} uso={uso} />
     {informes}
     <LlaveIa titulo="Llave de IA del negocio" ruta={`${ruta}/ai-key`} inicial={llave} revocable />
     <section className="space-y-3"><h2 className="text-lg font-semibold">Usuarios del negocio</h2>{sesiones}<Link className="block text-sm text-primary underline" href={`/platform/accesos?organizationId=${encodeURIComponent(negocio.id)}#sesiones`}>Ver accesos del negocio</Link><ListaUsuarios usuarios={usuarios} /></section>

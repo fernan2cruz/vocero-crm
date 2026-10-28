@@ -77,7 +77,7 @@ describe("accesos y auditoría", () => {
 
 describe("ayudas de seguridad", () => {
   it("traduce todas las acciones del contrato y tolera acciones futuras y claves de Object", () => {
-    expect(Object.values(accionesPlataforma)).toEqual(["Otorgar superadmin", "Retirar superadmin", "Crear negocio", "Suspender negocio", "Reactivar negocio", "Ajustar crédito", "Crédito de IA bajo", "Crédito de IA agotado", "Guardar llave de IA", "Revocar llave de IA", "Cambiar modo de IA", "Cambiar precio de IA", "Cerrar sesiones", "Desactivar usuario", "Reactivar usuario", "Cambiar rol", "Reiniciar contraseña", "Editar notas del negocio"]);
+    expect(Object.values(accionesPlataforma)).toEqual(["Otorgar superadmin", "Retirar superadmin", "Crear negocio", "Suspender negocio", "Reactivar negocio", "Ajustar crédito", "Crédito de IA bajo", "Crédito de IA agotado", "Guardar llave de IA", "Revocar llave de IA", "Cambiar modo de IA", "Cambiar precio de IA", "Cerrar sesiones", "Desactivar usuario", "Reactivar usuario", "Cambiar rol", "Reiniciar contraseña", "Editar notas del negocio", "Cambiar límites del negocio"]);
     for (const [a, texto] of Object.entries(accionesPlataforma)) expect(etiquetaAccion(a)).toBe(texto);
     for (const a of ["futura.accion", "toString", "__proto__"]) expect(etiquetaAccion(a)).toBe(a);
   });

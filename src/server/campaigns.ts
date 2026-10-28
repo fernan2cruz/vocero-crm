@@ -15,6 +15,7 @@ import { getCredentialsByOrg } from "@/server/whatsapp/credentials";
 import { sendTemplate } from "@/server/whatsapp/templates";
 import { plataformaEnabled } from "@/server/platform/flag";
 import { estadoDeNegocio } from "@/server/platform/estado";
+import { LimiteError, verificarDestinatarios } from "@/server/platform/limites";
 
 /**
  * 064 — Campañas: una plantilla aprobada a un segmento, con los destinatarios
@@ -29,6 +30,7 @@ export type CampaignFailure = {
     | "invalid"
     | "empty"
     | "too_many"
+    | "limite_destinatarios"
     | "count_mismatch"
     | "bad_state"
     | "not_connected";
@@ -160,6 +162,11 @@ export async function crearCampana(input: {
   const elegibles = candidatos.filter(
     ({ row }) => row.channel === "whatsapp" && (row.phone || row.waUserId)
   );
+  try { await verificarDestinatarios(input.organizationId, elegibles.length); }
+  catch (e) {
+    if (e instanceof LimiteError) return { ok: false, code: "limite_destinatarios", message: e.message };
+    throw e;
+  }
   if (elegibles.length === 0) {
     return { ok: false, code: "empty", message: "Nadie del filtro puede recibir una plantilla de WhatsApp" };
   }
@@ -299,6 +306,11 @@ export async function enviarCampana(input: {
   }
   const detalle = await obtenerCampana(organizationId, id);
   if (!detalle) return { ok: false, code: "not_found", message: "Campaña no encontrada" };
+  try { await verificarDestinatarios(organizationId, detalle.total); }
+  catch (e) {
+    if (e instanceof LimiteError) return { ok: false, code: "limite_destinatarios", message: e.message };
+    throw e;
+  }
   if (detalle.status === "done" || detalle.status === "cancelled") {
     return { ok: false, code: "bad_state", message: "Esta campaña ya terminó" };
   }

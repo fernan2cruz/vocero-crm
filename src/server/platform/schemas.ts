@@ -27,6 +27,11 @@ export const listarUsuariosSchema = z.object({
 
 // El ORM usa number para bigint: rechazar lo que JS no puede representar exactamente.
 export const microsSchema = z.number().int().safe();
+export const limitesSchema = z.object({
+  maxMessagesPerDay: z.number().int().min(1).max(2_147_483_647).nullable(),
+  maxCampaignRecipients: z.number().int().min(1).max(2_147_483_647).nullable(),
+  maxMonthlySpendMicros: microsSchema.positive().nullable(),
+}).strict();
 export const creditoSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("grant"), amountMicros: microsSchema.positive(), note: z.string().trim().min(3).max(200) }).strict(),
   z.object({ action: z.literal("adjust"), amountMicros: microsSchema.refine((n) => n !== 0), note: z.string().trim().min(3).max(200) }).strict(),

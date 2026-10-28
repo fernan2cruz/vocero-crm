@@ -84,7 +84,7 @@ export const POST = withAuth(async (session, req: Request, ctx: Params) => {
       return apiError(templateErrorStatus(err), err.code, err.message);
     }
     if (err instanceof SendError) {
-      return apiError(409, err.code, err.message);
+      return apiError(err.code === "limite_diario" ? 429 : 409, err.code, err.message);
     }
     throw err;
   }

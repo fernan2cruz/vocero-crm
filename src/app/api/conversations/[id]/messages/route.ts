@@ -83,6 +83,7 @@ const sendSchema = z.union([
 ]);
 
 const SEND_ERROR_STATUS: Record<SendError["code"], number> = {
+  limite_diario: 429,
   sandbox_violation: 403,
   not_connected: 409,
   reconnect_required: 409,

@@ -38,14 +38,14 @@ export async function pensarPorElCerebro(input: {
   cuerpoCrudo: string;
   contentType: string | null;
 }): Promise<ResultadoProxy> {
-  const r = await resolveAiProvider(input.organizationId);
+  const r = await resolveAiProvider(input.organizationId, { aplicarTope: true });
   if (!r.ok) {
     return {
       ok: false,
       status: 402,
-      code: "sin_credencial",
+      code: r.estado.motivo === "tope_mensual" ? "tope_mensual" : "sin_credencial",
       message:
-        r.estado.motivo === "sin_saldo" && r.estado.plataforma
+        (r.estado.motivo === "sin_saldo" && r.estado.plataforma) || r.estado.motivo === "tope_mensual"
           ? mensajeDeEstado(r.estado)!
           : r.estado.motivo === "sin_configurar"
           ? "No hay proveedor de IA configurado. Ponlo en Ajustes → IA."

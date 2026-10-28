@@ -225,6 +225,13 @@
       "when": 1793139581528,
       "tag": "0031_accesos",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1793140000000,
+      "tag": "0032_limites",
+      "breakpoints": true
     }
   ]
 }

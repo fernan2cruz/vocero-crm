@@ -12,7 +12,7 @@ export const THROTTLE_MS = 250;
 const LOTE = 20;
 
 /** Errores tras los cuales seguir sería inútil o dañino: se corta la campaña. */
-export const CODIGOS_FATALES = new Set(["not_connected", "reconnect_required", "sandbox_violation"]);
+export const CODIGOS_FATALES = new Set(["not_connected", "reconnect_required", "sandbox_violation", "limite_diario"]);
 
 export type EstadoDestinatario = "sent" | "failed" | "skipped";
 
@@ -91,7 +91,7 @@ export async function procesarCampana(
       } catch (err) {
         if (CODIGOS_FATALES.has(codigoDe(err))) {
           // Sin marcar: sigue pendiente y se reanuda cuando se arregle.
-          return { ...res, estado: "interrumpida", motivo: mensajeDe(err) };
+          return { ...res, estado: "interrumpida", motivo: codigoDe(err) === "limite_diario" ? "limite_diario" : mensajeDe(err) };
         }
         await deps.marcar(d.id, "failed", mensajeDe(err));
         res.fallidos++;

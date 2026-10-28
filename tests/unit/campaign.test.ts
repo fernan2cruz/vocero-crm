@@ -59,6 +59,13 @@ describe("064 — valoresPara", () => {
 });
 
 describe("064 — procesarCampana", () => {
+  it("el límite diario interrumpe sin fallidos y conserva el resto pendiente", async () => {
+    const { deps, marcas, enviados } = armar([d(1, "Ana Ruiz"), d(2, "Beto Paz"), d(3, "Cata Díaz")], {
+      falla: { c2: { code: "limite_diario", message: "Se alcanzó el límite de 1 mensajes por día de este negocio" } },
+    });
+    expect(await procesarCampana(deps, [], { throttleMs: 0 })).toEqual({ estado: "interrumpida", enviados: 1, fallidos: 0, omitidos: 0, motivo: "limite_diario" });
+    expect(enviados).toHaveLength(1); expect([...marcas.keys()]).toEqual(["r1"]);
+  });
   it("envía a todos y marca cada uno una vez", async () => {
     const { deps, marcas, enviados } = armar([d(1, "Ana Ruiz"), d(2, "Beto Paz")]);
     const r = await procesarCampana(deps, ["Hola {nombre}"], { throttleMs: 0 });

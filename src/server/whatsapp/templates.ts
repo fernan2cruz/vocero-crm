@@ -15,7 +15,7 @@ import {
   getCredentialsByWabaId,
   markReconnectRequired,
 } from "@/server/whatsapp/credentials";
-import { callGraphSend, SendError } from "@/server/inbox/send";
+import { callGraphSend, SendError, verificarLimiteDeEnvio } from "@/server/inbox/send";
 import { serializeMessage } from "@/server/inbox/ingest";
 import type { WebhookValue } from "@/server/inbox/webhook";
 
@@ -346,6 +346,7 @@ export async function sendTemplate(input: {
     );
   }
 
+  await verificarLimiteDeEnvio(input.organizationId, row.conversation.isTest);
   const creds = await getCredentialsByOrg(input.organizationId);
   if (!creds) throw new TemplateError("not_connected", "Sin número conectado");
   if (creds.status === "reconnect_required") {

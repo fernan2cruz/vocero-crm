@@ -164,6 +164,8 @@ export async function chatJson<T>(
 
 function detalleNoConfigurado(estado: Exclude<EstadoIa, { activa: true }>): string {
   switch (estado.motivo) {
+    case "tope_mensual":
+      return "Se alcanzó el tope mensual de IA de este negocio";
     case "sin_configurar":
       return "Sin proveedor de IA: configúralo en Ajustes → IA (u OPENROUTER_API_TOKEN en el entorno)";
     case "token_invalido":

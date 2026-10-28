@@ -34,7 +34,7 @@ export const POST = withAuth(async (session, req: Request, ctx: Params) => {
         })
       : await cancelarCampana(session.organizationId, id);
   if (!res.ok) {
-    return apiError(res.code === "not_found" ? 404 : 409, res.code, res.message);
+    return apiError(res.code === "not_found" ? 404 : res.code === "limite_destinatarios" ? 422 : 409, res.code, res.message);
   }
   return Response.json({ ok: true });
 });

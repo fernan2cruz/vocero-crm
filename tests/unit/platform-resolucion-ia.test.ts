@@ -22,7 +22,9 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllEnvs());
 function consultas(...resultados: unknown[][]) {
-  mocks.db.mockReturnValue({ select: () => ({ from: () => ({ where: () => ({ limit: async () => resultados.shift() }) }) }) });
+  mocks.db.mockReturnValue({ select: () => ({ from: (tabla: unknown) => ({ where: () => ({
+    limit: async () => tabla === schema.organizationLimits ? [] : resultados.shift(),
+  }) }) }) });
 }
 describe("resolución de IA de plataforma", () => {
   it.each([1, 100_000])("con llave y saldo %s resuelve plataforma", (saldo) => {

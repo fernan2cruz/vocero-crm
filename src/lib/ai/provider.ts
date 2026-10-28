@@ -1,6 +1,7 @@
 import { isAiConfiguredByEnv } from "@/lib/env";
 import { plataformaEnabled } from "@/server/platform/flag";
 import { saldoDe } from "@/server/platform/credit";
+import { topeMensualAlcanzado } from "@/server/platform/limites";
 import { modoIaDe, proveedorPlataforma } from "@/server/platform/ai-usage";
 import { last4, OPENROUTER_BASE_URL } from "@/lib/ai/presets";
 import {
@@ -36,7 +37,7 @@ export type EstadoIa =
   | { activa: false; motivo: "sin_configurar" }
   | {
       activa: false;
-      motivo: "token_invalido" | "sin_saldo";
+      motivo: "token_invalido" | "sin_saldo" | "tope_mensual";
       last4: string;
       desde: Date | null;
       plataforma?: boolean;
@@ -132,9 +133,13 @@ export function resolver(
  * que consultar.
  */
 export async function resolveAiProvider(
-  organizationId?: string
+  organizationId?: string,
+  opts: { aplicarTope?: boolean } = {}
 ): Promise<AiResolution> {
   if (organizationId && plataformaEnabled() && await modoIaDe(organizationId) === "platform") {
+    // El tope mensual protege al AGENTE en producción. El Laboratorio y el juez (sandbox) no lo piden:
+    // un negocio que prueba mucho no debe quedarse sin agente real, ni al revés.
+    if (opts.aplicarTope && await topeMensualAlcanzado(organizationId)) return estadoTopeMensual();
     return resolverPlataforma(await proveedorPlataforma(), await saldoDe(organizationId));
   }
   const cred = organizationId
@@ -145,6 +150,7 @@ export async function resolveAiProvider(
 
 export async function estadoIaDe(organizationId: string): Promise<EstadoIa> {
   if (plataformaEnabled() && await modoIaDe(organizationId) === "platform") {
+    if (await topeMensualAlcanzado(organizationId)) return estadoTopeMensual().estado;
     const r = resolverPlataforma(await proveedorPlataforma(), await saldoDe(organizationId));
     // Se conserva el DTO histórico de Ajustes; source del adaptador distingue la llave.
     // Los últimos 4 de la llave de PLATAFORMA no se enseñan al negocio (S-5).
@@ -165,6 +171,7 @@ export async function isAiConfiguredFor(
 /** El mensaje que ve el dueño cuando su agente no puede contestar. */
 export function mensajeDeEstado(estado: EstadoIa): string | null {
   if (estado.activa) return null;
+  if (estado.motivo === "tope_mensual") return "Se alcanzó el tope mensual de IA de este negocio";
   // El negocio gestionado no puede reparar su credencial desde Ajustes.
   if (plataformaEnabled()) {
     if (estado.motivo === "sin_saldo" && estado.plataforma) {
@@ -184,6 +191,10 @@ export function mensajeDeEstado(estado: EstadoIa): string | null {
       if (estado.plataforma) return "Tu agente está pausado: se agotó el crédito de IA. Contacta a quien administra tu plataforma.";
       return "Tu agente está pausado: tu cuenta del proveedor de IA se quedó sin saldo. Recárgala y pulsa «Probar conexión» en Ajustes → IA.";
   }
+}
+
+function estadoTopeMensual(): Extract<AiResolution, { ok: false }> {
+  return { ok: false, estado: { activa: false, motivo: "tope_mensual", last4: "", desde: null, plataforma: true } };
 }
 
 /** Pura: sin llave no hay respaldo implícito; el saldo se vuelve a leer en cada llamada. */
