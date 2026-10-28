@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { getEnv } from "@/lib/env";
+import { configDefinida } from "@/server/platform/config/cache";
 import { MetaApiError } from "@/lib/meta/client";
 import { CHANNEL_ORDER } from "@/lib/channels";
 import { isChannelEnabled } from "@/server/channels/enabled";
@@ -257,9 +258,10 @@ export async function ensureWebhookForOrg(
 
   const env = getEnv();
   // Zernio tiene que alcanzar la URL desde fuera. `ZERNIO_BASE_URL` solo se
-  // define en pruebas (el simulador), y ahí la URL local sí vale.
+  // se configura explícitamente en pruebas (el simulador), y ahí la URL local
+  // sí vale. Distinguirlo del default conserva el comportamiento del .env.
   const url = webhookUrl(WEBHOOK_PATH[conns[0]!.channel]);
-  if (!url.startsWith("https://") && !process.env.ZERNIO_BASE_URL) {
+  if (!url.startsWith("https://") && !configDefinida("ZERNIO_BASE_URL")) {
     return {
       ok: false,
       code: "sin_https",

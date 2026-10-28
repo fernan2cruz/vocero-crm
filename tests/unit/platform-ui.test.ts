@@ -77,11 +77,13 @@ describe("accesos y auditoría", () => {
 
 describe("ayudas de seguridad", () => {
   it("traduce todas las acciones del contrato y tolera acciones futuras y claves de Object", () => {
-    expect(Object.values(accionesPlataforma)).toEqual(["Otorgar superadmin", "Retirar superadmin", "Crear negocio", "Suspender negocio", "Reactivar negocio", "Ajustar crédito", "Crédito de IA bajo", "Crédito de IA agotado", "Guardar llave de IA", "Revocar llave de IA", "Cambiar modo de IA", "Cambiar precio de IA", "Cerrar sesiones", "Desactivar usuario", "Reactivar usuario", "Cambiar rol", "Reiniciar contraseña", "Editar notas del negocio", "Cambiar límites del negocio", "Crear usuario"]);
+    expect(Object.values(accionesPlataforma)).toEqual(["Otorgar superadmin", "Retirar superadmin", "Crear negocio", "Suspender negocio", "Reactivar negocio", "Ajustar crédito", "Crédito de IA bajo", "Crédito de IA agotado", "Guardar llave de IA", "Revocar llave de IA", "Cambiar modo de IA", "Cambiar precio de IA", "Cerrar sesiones", "Desactivar usuario", "Reactivar usuario", "Cambiar rol", "Reiniciar contraseña", "Editar notas del negocio", "Cambiar límites del negocio", "Crear usuario", "Guardar configuración", "Quitar configuración"]);
     for (const [a, texto] of Object.entries(accionesPlataforma)) expect(etiquetaAccion(a)).toBe(texto);
     for (const a of ["futura.accion", "toString", "__proto__"]) expect(etiquetaAccion(a)).toBe(a);
   });
   it("resume motivos, roles, dinero exacto y sesiones sin volcar campos desconocidos", () => {
+    expect(resumenDetalle("config.set", { key: "META_APP_SECRET", secreto: true, valor: "secreto" })).toBe("Clave: META_APP_SECRET · Cambió");
+    expect(resumenDetalle("config.clear", { key: "META_APP_SECRET", valor: "secreto" })).toBe("Clave: META_APP_SECRET · Vuelve al respaldo");
     expect(resumenDetalle("org.suspend", { reason: "Revisión" })).toBe("Motivo: Revisión");
     expect(resumenDetalle("user.role", { from: "owner", to: "member" })).toBe("Propietario → Miembro");
     expect(resumenDetalle("credit.adjust", { amountMicros: -500000, balanceAfter: 1, note: "Corrección" })).toBe("Nota: Corrección · Monto: −$0.50 USD · Saldo después: $0.000001 USD");

@@ -115,6 +115,12 @@ export function resumeDispatch(): void {
   }
 }
 
+/** S8 — Calienta los ajustes antes de los workers; los errores degradan al entorno. */
+export async function warmPlatformConfig(): Promise<void> {
+  const { calentarConfig } = await import("@/server/platform/config/service");
+  await calentarConfig();
+}
+
 /**
  * 047 — Arranca el barrido de los eventos de webhook. Siempre: la ingesta es
  * del núcleo. La primera pasada retoma lo que el reinicio dejó a medias (un

@@ -18,6 +18,14 @@ imagen `ghcr.io/kevinrivm/vocero-crm:X.Y.Z`.
 - `deploy/`: stack de producción para un servidor (Caddy con HTTPS automático, app, agente, Postgres en red interna,
   respaldos diarios con prueba de restauración, `deploy.sh` con reversión). Guía: `docs/despliegue-almalinux.md`.
 - La imagen incluye `platform-grant.mjs` para otorgar el primer superadmin en producción.
+- **Configuración de plataforma desde el portal (065/S8)**: con `PLATAFORMA=on`, `/platform/configuracion` administra
+  el App secret y el verify token de Meta (cifrados en la BD, sin reiniciar), la versión de Graph, el registro público,
+  la retención de accesos, los módulos (`CHANNELS`, `AGENDA`, `ATRIBUCION`) y las bases de Zernio e Instagram. Muestra
+  «Pendiente de configurar» y solo los últimos cuatro caracteres de cada secreto. El verify token se autogenera si falta
+  y la URL para Meta se copia desde la misma pantalla. Cada cambio queda en la auditoría de plataforma.
+- El `.env` de `deploy/` ya no lleva esas variables: solo arranque (`DOMAIN`, `POSTGRES_PASSWORD`, `ENCRYPTION_KEY`,
+  `BETTER_AUTH_SECRET`, `BOT_API_KEY`, `PLATAFORMA`) más infraestructura y Nea. Un `.env` antiguo sigue funcionando como
+  respaldo (`env_file`), y sin `PLATAFORMA` el verify token sigue siendo obligatorio en el entorno.
 
 ## 2.5.1 — 2026-10-25
 

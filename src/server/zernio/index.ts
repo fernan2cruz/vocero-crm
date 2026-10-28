@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { configSync } from "@/server/platform/config/cache";
 import { MetaApiError } from "@/lib/meta/client";
 
 /**
@@ -15,8 +16,6 @@ import { MetaApiError } from "@/lib/meta/client";
  * sitios donde equivocarse. El canal decide QUÉ plataforma acepta; este módulo
  * resuelve CÓMO se habla con Zernio.
  */
-
-export const ZERNIO_BASE = process.env.ZERNIO_BASE_URL ?? "https://zernio.com/api/v1";
 
 /** Cabeceras con las que Zernio firma sus entregas (la segunda es heredada). */
 const SIGNATURE_HEADERS = ["x-zernio-signature", "x-late-signature"] as const;
@@ -222,7 +221,7 @@ export async function zernioFetch(
 ): Promise<unknown> {
   let res: Response;
   try {
-    res = await fetch(`${ZERNIO_BASE}${path}`, {
+    res = await fetch(`${configSync("ZERNIO_BASE_URL")}${path}`, {
       method: opts.method ?? "GET",
       headers: {
         Authorization: `Bearer ${opts.token}`,

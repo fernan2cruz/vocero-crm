@@ -11,7 +11,9 @@ export async function register(): Promise<void> {
       encryptLegacySecrets,
       resumeDispatch,
       resumeWebhooks,
+      warmPlatformConfig,
     } = await import("./instrumentation-node");
+    await warmPlatformConfig();
     await checkMediaDir();
     await cleanupOrphanRuns();
     await encryptLegacySecrets();

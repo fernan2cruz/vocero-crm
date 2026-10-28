@@ -14,7 +14,47 @@ me puedas recomendar».
 **Carril**: completo. Toca autenticación, aislamiento de tenants, dinero
 (crédito) y el camino de la IA.
 
-## El problema
+## S8 — Configuración de plataforma desde el portal (2026-10-28)
+
+La plataforma resuelve un registro tipado: `platform_config` → `.env` → valor
+predeterminado. Solo los superadmin acceden a `/platform/configuracion` y a
+`GET /api/platform/config`, `PUT` y `DELETE /api/platform/config/[clave]`.
+PUT recibe `{valor: ...}` según el tipo del registro. DELETE elimina solo esa
+clave y vuelve al respaldo. Las respuestas contienen el catálogo, origen,
+estado y últimos cuatro de secretos; el valor solo se devuelve si no es secreto.
+Ambos cambios son atómicos con `config.set`/`config.clear`, sin valores en auditoría.
+
+Se trasladan App secret y verify token de Meta (cifrados), versión de Graph,
+registro público, retención de accesos, canales, agenda, atribución y las bases
+de Zernio e Instagram. El verify token se crea con 32 bytes aleatorios si falta
+tanto en BD como en el entorno. Una inserción con PK y conflicto ignorado seguida
+de relectura hace que arranques simultáneos usen la misma fila. Su procedencia
+autogenerada se conserva dentro del sobre cifrado, aun si se elimina al autor.
+
+Excepción específica a S-5 solicitada para S8: el verify token completo y la URL
+que lo contiene se presentan exclusivamente en la página del superadmin, porque
+deben copiarse a Meta. La API del catálogo no los devuelve. El App secret jamás
+se devuelve. Ni las llaves de IA ni los mocks se duplican en este registro.
+
+La caché en proceso dura 30 s, se calienta en instrumentation antes de arrancar
+los workers y se invalida tras un commit local. Las lecturas síncronas usan el
+último valor y solicitan refresco en segundo plano al vencer. Antes de calentar
+usan el entorno. Una lectura fallida descarta valores anteriores y degrada al
+entorno/default, con un mensaje fijo sin datos y sin impedir el arranque.
+Sin `PLATAFORMA`, no se consulta esta tabla ni se genera un token.
+
+El arranque conserva fuera de BD DOMAIN/POSTGRES_PASSWORD (Compose deriva URLs),
+ENCRYPTION_KEY (raíz de cifrado), BETTER_AUTH_SECRET (sesiones), BOT_API_KEY
+(compartida con Nea) y PLATAFORMA (existencia del portal). El registro público
+sigue cerrado por defecto; el bootstrap usa un override temporal de Compose y
+`platform:grant`, sin cambiar el contrato del alta.
+
+Pruebas: `tests/unit/platform-config*.test.ts`, pruebas de doctor, firma,
+registro del webhook y UI de plataforma; guion real en
+`tests/e2e/us-configuracion-plataforma.md`. La prueba contra Postgres y navegador
+queda para la revisión acordada con Claude; esta implementación se verifica sin red.
+
+## El problema original
 
 Hoy una instancia es un negocio: el registro se cierra tras la primera
 organización (`server/auth/registration.ts`), cada negocio pega su propia llave

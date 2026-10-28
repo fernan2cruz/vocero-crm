@@ -55,7 +55,6 @@ describe("requiredEnvKeys", () => {
       "DATABASE_URL",
       "BETTER_AUTH_SECRET",
       "ENCRYPTION_KEY",
-      "META_WEBHOOK_VERIFY_TOKEN",
     ]);
   });
 });
@@ -63,7 +62,7 @@ describe("requiredEnvKeys", () => {
 describe("evaluateEnv", () => {
   it("un entorno válido: una ✓ por obligatoria y el env parseado", () => {
     const { results, env } = evaluateEnv(VALIDO);
-    expect(results.map((r) => r.status)).toEqual(["ok", "ok", "ok", "ok", "ok"]);
+    expect(results.map((r) => r.status)).toEqual(["ok", "ok", "ok", "ok"]);
     expect(env?.APP_BASE_URL).toBe("https://localhost");
   });
 
@@ -90,14 +89,24 @@ describe("evaluateEnv", () => {
     expect(porLabel(results, "POSTGRES_PASSWORD")).toBeUndefined();
   });
 
-  it("una variable que falta y una ENCRYPTION_KEY mal generada: mensaje en español y el arreglo", () => {
-    const source: Record<string, string> = { ...VALIDO, ENCRYPTION_KEY: "corta" };
+  it("sin PLATAFORMA el verify token sigue siendo obligatorio; con ella lo cubre el portal", () => {
+    const source: Record<string, string> = { ...VALIDO };
     delete source.META_WEBHOOK_VERIFY_TOKEN;
-    const { results } = evaluateEnv(source);
-    const token = porLabel(results, "META_WEBHOOK_VERIFY_TOKEN");
+
+    const sinPlataforma = evaluateEnv(source);
+    const token = porLabel(sinPlataforma.results, "META_WEBHOOK_VERIFY_TOKEN");
     expect(token?.status).toBe("fail");
-    expect(token?.detail).toBe("falta");
+    expect(token?.detail).toContain("PLATAFORMA");
     expect(token?.fix).toContain("openssl rand -hex 32");
+    expect(sinPlataforma.env).toBeNull();
+
+    const conPlataforma = evaluateEnv({ ...source, PLATAFORMA: "on" });
+    expect(porLabel(conPlataforma.results, "META_WEBHOOK_VERIFY_TOKEN")).toBeUndefined();
+    expect(conPlataforma.env).not.toBeNull();
+  });
+
+  it("una ENCRYPTION_KEY mal generada: mensaje en español y el arreglo", () => {
+    const { results } = evaluateEnv({ ...VALIDO, ENCRYPTION_KEY: "corta" });
     const key = porLabel(results, "ENCRYPTION_KEY");
     expect(key?.status).toBe("fail");
     expect(key?.detail).toContain("32 bytes");

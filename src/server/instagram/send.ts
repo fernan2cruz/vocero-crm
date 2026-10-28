@@ -1,4 +1,5 @@
 import { MetaApiError } from "@/lib/meta/client";
+import { configSync } from "@/server/platform/config/cache";
 import type { InstagramCredentials } from "@/server/instagram/credentials";
 
 /**
@@ -8,11 +9,6 @@ import type { InstagramCredentials } from "@/server/instagram/credentials";
  * Dos transportes, misma firma: Zernio (API unificada) y Meta directo
  * (graph.instagram.com). Ambos devuelven el id del mensaje en la plataforma.
  */
-
-const ZERNIO_BASE = process.env.ZERNIO_BASE_URL ?? "https://zernio.com/api/v1";
-const IG_GRAPH_BASE =
-  process.env.IG_GRAPH_BASE_URL ?? "https://graph.instagram.com";
-const IG_GRAPH_VERSION = process.env.META_GRAPH_API_VERSION ?? "v25.0";
 
 /** Instagram corta el texto en 1000 BYTES (no caracteres): con acentos y
  * emojis el margen real es menor de lo que aparenta. */
@@ -67,7 +63,7 @@ async function sendViaZernio(input: {
   }
 
   const res = await fetchJson(
-    `${ZERNIO_BASE}/inbox/conversations/${encodeURIComponent(threadRef)}/messages`,
+    `${configSync("ZERNIO_BASE_URL")}/inbox/conversations/${encodeURIComponent(threadRef)}/messages`,
     {
       method: "POST",
       headers: {
@@ -104,7 +100,7 @@ async function sendViaMeta(input: {
   // El host es graph.instagram.com, NO graph.facebook.com: es el error mas
   // comun de esta integracion y devuelve un fallo de permisos que despista.
   const res = await fetchJson(
-    `${IG_GRAPH_BASE}/${IG_GRAPH_VERSION}/${credentials.igUserId}/messages`,
+    `${configSync("IG_GRAPH_BASE_URL")}/${configSync("META_GRAPH_API_VERSION")}/${credentials.igUserId}/messages`,
     {
       method: "POST",
       headers: {

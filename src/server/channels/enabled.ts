@@ -1,4 +1,4 @@
-import { getEnv } from "@/lib/env";
+import { configSync } from "@/server/platform/config/cache";
 import { isChannel, type Channel } from "@/lib/channels";
 
 /**
@@ -34,7 +34,7 @@ export function parseChannels(raw: string | undefined): Set<Channel> {
 }
 
 export function enabledChannels(): Set<Channel> {
-  return parseChannels(getEnv().CHANNELS);
+  return parseChannels(configSync("CHANNELS").join(","));
 }
 
 export function isChannelEnabled(channel: Channel): boolean {

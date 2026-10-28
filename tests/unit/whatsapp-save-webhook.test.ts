@@ -33,6 +33,7 @@ const creds = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/env", () => ({ getEnv: () => env }));
+vi.mock("@/server/platform/config/cache", () => ({ configSync: (key: keyof typeof env) => env[key] }));
 const sesion = vi.hoisted(() => ({ role: "owner" }));
 vi.mock("@/lib/auth/session", () => ({
   UnauthorizedError: class UnauthorizedError extends Error {},

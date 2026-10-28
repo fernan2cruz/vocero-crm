@@ -369,6 +369,11 @@ mano. La imagen va fijada a la versión (una prueba lo exige). Verifica igual
 que arriba: `curl -s https://<tu-url>/api/health` →
 `{"ok":true,"version":"2.5.1",…,"mediaWritable":true}`.
 
+Si vas a operar el portal multi-negocio (`PLATAFORMA=on`), la guía es
+[`docs/despliegue-almalinux.md`](docs/despliegue-almalinux.md): el App secret,
+el verify token y los módulos se configuran en `/platform/configuracion` sin
+tocar el `.env` ni reiniciar.
+
 **Render** — [`render.yaml`](render.yaml) es un Blueprint completo: servicio
 web desde la imagen, base Postgres gestionada, disco de 1 GB en `/data`,
 healthcheck y variables obligatorias; `BETTER_AUTH_SECRET` y `ENCRYPTION_KEY`

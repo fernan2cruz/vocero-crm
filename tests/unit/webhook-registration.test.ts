@@ -17,6 +17,7 @@ const env = vi.hoisted(() => ({
   META_GRAPH_API_VERSION: "v25.0",
 }));
 vi.mock("@/lib/env", () => ({ getEnv: () => env }));
+vi.mock("@/server/platform/config/cache", () => ({ configSync: (key: keyof typeof env) => env[key] }));
 
 import {
   registerWebhookForNumber,

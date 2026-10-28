@@ -86,27 +86,18 @@ services:
     # El entrypoint arranca como root SOLO para dejar /data escribible y baja a `vocero` con su-exec.
     cap_add: [CHOWN, SETUID, SETGID, FOWNER, DAC_OVERRIDE]
     tmpfs: ["/tmp"]
+    # Compatibilidad: los .env antiguos siguen aportando respaldos al portal.
+    # El generador nuevo solo escribe arranque, recursos, respaldos y Nea.
+    env_file: [.env]
     environment:
       APP_BASE_URL: https://${DOMAIN}${HTTPS_PORT_SUFFIX:-}
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-wassapi}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?define BETTER_AUTH_SECRET}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:?define ENCRYPTION_KEY}
-      META_WEBHOOK_VERIFY_TOKEN: ${META_WEBHOOK_VERIFY_TOKEN:?define META_WEBHOOK_VERIFY_TOKEN}
-      META_APP_SECRET: ${META_APP_SECRET:-}
-      META_GRAPH_API_VERSION: ${META_GRAPH_API_VERSION:-v25.0}
       META_GRAPH_BASE_URL: ${META_GRAPH_BASE_URL:-https://graph.facebook.com}   # solo se cambia para pruebas con un API falso
-      OPENROUTER_API_TOKEN: ${OPENROUTER_API_TOKEN:-}
-      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api}
-      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-}
-      OPENROUTER_JUDGE_MODEL: ${OPENROUTER_JUDGE_MODEL:-}
-      ALLOW_SIGNUP: ${ALLOW_SIGNUP:-}
       AGENT_COALESCE_MS: ${AGENT_COALESCE_MS:-6000}
       # Módulos opcionales: vacío = apagado.
       PLATAFORMA: ${PLATAFORMA:-}
-      ACCESS_RETENTION_DAYS: ${ACCESS_RETENTION_DAYS:-180}
-      CHANNELS: ${CHANNELS:-}
-      AGENDA: ${AGENDA:-}
-      ATRIBUCION: ${ATRIBUCION:-}
       BOT_API_KEY: ${BOT_API_KEY:-}
       BRAIN_HEALTH_URL: ${BRAIN_HEALTH_URL-http://nea:8000/health}
       BRAIN_DISPATCH_URL: ${BRAIN_DISPATCH_URL-http://nea:8000/vocero/dispatch}

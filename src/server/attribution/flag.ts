@@ -27,6 +27,7 @@
  */
 
 /** Valores que cuentan como "encendida". Cualquier otra cosa, apagada. */
+import { configSync } from "@/server/platform/config/cache";
 const ON_VALUES = new Set(["on", "1", "true", "si", "sí", "yes"]);
 
 export function parseAtribucionFlag(raw: string | undefined): boolean {
@@ -34,7 +35,7 @@ export function parseAtribucionFlag(raw: string | undefined): boolean {
 }
 
 /**
- * Se lee de `process.env` directo, no por `getEnv()`, igual que
+ * Se lee de la caché de plataforma (y del entorno como respaldo), sin `getEnv()`, igual que
  * `agendaEnabled()` e `isMockEnabled()`: preguntar si una feature existe no
  * puede depender de que TODO el entorno valide. La ingesta de un mensaje
  * consulta esta bandera (para decidir si guarda el `ctwa_clid`), y un entorno
@@ -44,7 +45,7 @@ export function parseAtribucionFlag(raw: string | undefined): boolean {
  * documentación y su tipo. Lo que no pasa por el validador es esta consulta.
  */
 export function atribucionEnabled(): boolean {
-  return parseAtribucionFlag(process.env.ATRIBUCION);
+  return configSync("ATRIBUCION");
 }
 
 /**

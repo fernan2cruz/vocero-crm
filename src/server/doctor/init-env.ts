@@ -19,8 +19,8 @@ export const PLACEHOLDER_PREFIX = "REEMPLAZA_";
 export const DEFAULT_DOMAIN = "localhost";
 
 /**
- * Los secretos que el arranque exige (src/lib/env.ts) más la contraseña de
- * Postgres del compose. El comando `openssl` es el que pedía la documentación:
+ * Secretos de arranque, contraseña de Postgres y token opcional para mantener
+ * el init-env de un solo negocio. El comando `openssl` es el de la documentación:
  * `pnpm doctor` lo sugiere cuando falta uno en un `.env` que ya existe.
  */
 export const GENERATED_SECRETS = {
@@ -38,6 +38,8 @@ export const GENERATED_SECRETS = {
     openssl: "openssl rand -base64 32",
   },
   META_WEBHOOK_VERIFY_TOKEN: {
+    // Compatibilidad de init-env sin PLATAFORMA: ya no es obligatorio para
+    // arrancar ni para doctor. deploy/gen-env deja que lo genere la BD.
     generate: () => randomBytes(32).toString("hex"),
     openssl: "openssl rand -hex 32",
   },

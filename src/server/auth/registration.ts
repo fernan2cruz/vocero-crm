@@ -1,6 +1,7 @@
 import { count } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { plataformaEnabled } from "@/server/platform/flag";
+import { configSync } from "@/server/platform/config/cache";
 
 /**
  * Registro público cerrado tras la primera organización (FR-060), salvo la
@@ -8,8 +9,8 @@ import { plataformaEnabled } from "@/server/platform/flag";
  * propietario (bypass interno del gate).
  */
 export async function isPublicSignupAllowed(): Promise<boolean> {
-  if (plataformaEnabled()) return process.env.ALLOW_SIGNUP === "true";
-  if (process.env.ALLOW_SIGNUP === "true") return true;
+  if (plataformaEnabled()) return configSync("ALLOW_SIGNUP");
+  if (configSync("ALLOW_SIGNUP")) return true;
   const db = getDb();
   const rows = await db.select({ n: count() }).from(schema.organization);
   return (rows[0]?.n ?? 0) === 0;

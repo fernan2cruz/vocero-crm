@@ -1,4 +1,4 @@
-import { getEnv } from "@/lib/env";
+import { configSync } from "@/server/platform/config/cache";
 import { isValidWebhookToken } from "@/server/inbox/webhook";
 import {
   channelDisabledResponse,
@@ -28,7 +28,7 @@ type Params = { params: Promise<{ webhookToken: string }> };
 export async function GET(_req: Request, { params }: Params) {
   if (!isChannelEnabled("tiktok")) return channelDisabledResponse();
   const { webhookToken } = await params;
-  if (!isValidWebhookToken(webhookToken, getEnv().META_WEBHOOK_VERIFY_TOKEN)) {
+  if (!isValidWebhookToken(webhookToken, configSync("META_WEBHOOK_VERIFY_TOKEN"))) {
     return new Response(null, { status: 404 });
   }
   return Response.json({ ok: true });
@@ -37,7 +37,7 @@ export async function GET(_req: Request, { params }: Params) {
 export async function POST(req: Request, { params }: Params) {
   if (!isChannelEnabled("tiktok")) return channelDisabledResponse();
   const { webhookToken } = await params;
-  if (!isValidWebhookToken(webhookToken, getEnv().META_WEBHOOK_VERIFY_TOKEN)) {
+  if (!isValidWebhookToken(webhookToken, configSync("META_WEBHOOK_VERIFY_TOKEN"))) {
     return new Response(null, { status: 404 });
   }
 

@@ -39,9 +39,6 @@ git checkout feat/066-marca-wassapi          # o la rama que quieras desplegar
 Edita `deploy/.env`:
 
 - `CADDY_GLOBAL=email admin@tudominio.com` (avisos de Let's Encrypt).
-- `META_APP_SECRET` **obligatorio con `PLATAFORMA=on`**: copia el App Secret desde Meta → Configuración → Básica.
-  Sin él, los webhooks de Meta (WhatsApp, Instagram y Messenger) responden 503; con él exigen firma válida.
-- `ALLOW_SIGNUP=true` solo hasta crear la primera cuenta (paso 3).
 - `ALLOWED_WA_IDS=` con tu número mientras pruebas.
 
 ```bash
@@ -57,18 +54,56 @@ stack para inspeccionarlo con `docker compose -f docker-compose.prod.yml logs`).
 
 ## 3. Primer superadmin
 
-1. Con `ALLOW_SIGNUP=true`, abre `https://crm.tudominio.com` y crea tu cuenta.
+1. Abre temporalmente el registro con un override de Compose, sin añadir variables al `.env`:
+   ```bash
+   docker compose -f docker-compose.prod.yml -f - up -d app <<'YAML'
+   services:
+     app:
+       environment:
+         ALLOW_SIGNUP: "true"
+   YAML
+   ```
+   Abre `https://crm.tudominio.com` y crea tu cuenta. Haz este paso antes de anunciar el servidor.
 2. Otórgale superadmin:
    ```bash
    docker compose -f docker-compose.prod.yml exec app node platform-grant.mjs tu@correo.com
    ```
-3. Pon `ALLOW_SIGNUP=` (vacío) en el `.env` y recrea la app: `docker compose -f docker-compose.prod.yml up -d app`.
+3. Retira el override recreando la app con su compose normal:
+   `docker compose -f docker-compose.prod.yml up -d --force-recreate app`.
+   Si actualizas una instalación antigua, quita también cualquier `ALLOW_SIGNUP=true` de su `.env`.
 4. Entra a `https://crm.tudominio.com/platform`: negocios, usuarios, IA y crédito, consumo, accesos, auditoría.
 
 ## 4. Conectar WhatsApp
 
-La URL del webhook de cada número en Meta es `https://crm.tudominio.com/api/webhooks/wa/<META_WEBHOOK_VERIFY_TOKEN>`
-(el token está en `.env`). El resto de la conexión se hace desde la app del negocio.
+Entra como superadmin a `/platform/configuracion` y pega el **App secret de Meta**
+(Meta → Configuración → Básica). Sin él, los webhooks de Meta responden 503; con él exigen firma válida.
+En «Webhook de Meta», copia la URL completa y el verify token a Meta. El token se autogenera una vez y se guarda
+cifrado en la base: no hay que añadirlo al `.env`. Cambiarlo o quitarlo sin respaldo genera una URL nueva;
+actualiza también Meta y vuelve a registrar los números. La conexión del número se hace desde la app del negocio.
+La llave y los modelos de IA de plataforma se configuran en `/platform/ia`.
+
+### Qué queda fuera del portal y por qué
+
+El `.env` nuevo solo necesita `DOMAIN`, `POSTGRES_PASSWORD`, `ENCRYPTION_KEY`, `BETTER_AUTH_SECRET`,
+`BOT_API_KEY` y `PLATAFORMA=on`, además de opciones de infraestructura y Nea si se usan.
+`DOMAIN` y `POSTGRES_PASSWORD` permiten a Compose derivar `APP_BASE_URL` y `DATABASE_URL` antes de abrir la base;
+`ENCRYPTION_KEY` es la llave raíz que descifra los secretos de esa misma base;
+`BETTER_AUTH_SECRET` firma las sesiones; `BOT_API_KEY` se comparte con el servicio Nea;
+`PLATAFORMA` decide si existe el portal antes de consultar la base. Ninguna puede depender de una configuración
+que solo se pueda leer después de usarla.
+
+Los valores del portal ganan a los del `.env`. «Quitar» vuelve al respaldo o al valor predeterminado;
+sin respaldo del verify token se genera otro. Los secretos no se rellenan al editar: solo se muestran sus últimos
+cuatro caracteres. El verify token completo se presenta únicamente al superadmin para copiarlo a Meta.
+Los cambios se aplican sin reiniciar. La caché dura 30 segundos; el proceso que guarda la invalida inmediatamente
+y los demás refrescan en segundo plano al volver a usarla. Si la base falla al leer, se descarta la caché anterior
+y se usan el `.env` y los valores predeterminados; se registra un mensaje fijo sin datos. El arranque continúa.
+Si además falta App secret, Meta sigue recibiendo 503. Sin `PLATAFORMA`, esta capa no consulta la base.
+
+**Actualizar desde un `.env` antiguo:** no hay que migrar sus variables a mano. `env_file` en el servicio app
+conserva esos respaldos, incluidas las antiguas variables de IA. El generador nuevo ya no las escribe.
+Puedes copiarlas al portal y retirarlas del archivo después de comprobar el resultado. Las opciones de mocks
+siguen solo en el entorno de pruebas; nunca se configuran en el portal.
 
 ## 5. Varios negocios y el agente (Nea)
 

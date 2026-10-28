@@ -1,4 +1,4 @@
-import { getEnv } from "@/lib/env";
+import { configSync } from "@/server/platform/config/cache";
 import { isValidSignature, isValidWebhookToken, metaSignatureUnavailable } from "@/server/inbox/webhook";
 import {
   channelDisabledResponse,
@@ -24,8 +24,7 @@ type Params = { params: Promise<{ webhookToken: string }> };
 export async function GET(req: Request, { params }: Params) {
   if (!isChannelEnabled("messenger")) return channelDisabledResponse();
   const { webhookToken } = await params;
-  const env = getEnv();
-  if (!isValidWebhookToken(webhookToken, env.META_WEBHOOK_VERIFY_TOKEN)) {
+  if (!isValidWebhookToken(webhookToken, configSync("META_WEBHOOK_VERIFY_TOKEN"))) {
     return new Response(null, { status: 404 });
   }
 
@@ -35,7 +34,7 @@ export async function GET(req: Request, { params }: Params) {
   const token = url.searchParams.get("hub.verify_token");
   const challenge = url.searchParams.get("hub.challenge");
 
-  if (mode === "subscribe" && token === env.META_WEBHOOK_VERIFY_TOKEN) {
+  if (mode === "subscribe" && token === configSync("META_WEBHOOK_VERIFY_TOKEN")) {
     return new Response(challenge ?? "", { status: 200 });
   }
   return new Response(null, { status: 403 });
@@ -44,8 +43,7 @@ export async function GET(req: Request, { params }: Params) {
 export async function POST(req: Request, { params }: Params) {
   if (!isChannelEnabled("messenger")) return channelDisabledResponse();
   const { webhookToken } = await params;
-  const env = getEnv();
-  if (!isValidWebhookToken(webhookToken, env.META_WEBHOOK_VERIFY_TOKEN)) {
+  if (!isValidWebhookToken(webhookToken, configSync("META_WEBHOOK_VERIFY_TOKEN"))) {
     return new Response(null, { status: 404 });
   }
 
@@ -62,7 +60,7 @@ export async function POST(req: Request, { params }: Params) {
   const isMeta = looksLikeMetaPayload(payload, "page");
 
   if (isMeta) {
-    if (metaSignatureUnavailable(env.META_APP_SECRET)) return new Response(null, { status: 503 });
+    if (metaSignatureUnavailable(configSync("META_APP_SECRET"))) return new Response(null, { status: 503 });
     // Meta firma cada entrega con el App Secret. Sin esta capa, quien conozca
     // la URL secreta puede inyectar mensajes falsos: el agente los contestaría
     // enviando un mensaje REAL desde la página al destinatario que el atacante
@@ -71,7 +69,7 @@ export async function POST(req: Request, { params }: Params) {
       !isValidSignature(
         rawBody,
         req.headers.get("x-hub-signature-256"),
-        env.META_APP_SECRET
+        configSync("META_APP_SECRET")
       )
     ) {
       return new Response(null, { status: 401 });

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { envSchema } from "@/lib/env";
+import { envBaseSchema } from "@/lib/env";
 
 /**
  * #88 — Un manifest por plataforma (Render, Fly, Railway) para desplegar la
@@ -32,8 +32,9 @@ const sinComentarios = (texto: string) =>
     .join("\n");
 
 // Obligatoria = sin `.optional()` ni `.default()`. `isOptional()` solo prueba
-// `undefined` contra el tipo: no lee el entorno ni deja nada cacheado.
-const OBLIGATORIAS = Object.entries(envSchema.shape)
+// `undefined` contra el tipo: no lee el entorno ni deja nada cacheado. Se usa
+// la forma base porque la regla del token de webhook depende de PLATAFORMA.
+const OBLIGATORIAS = Object.entries(envBaseSchema.shape)
   .filter(([, tipo]) => !tipo.isOptional())
   .map(([clave]) => clave);
 
@@ -51,17 +52,17 @@ function bloqueRender(clave: string): string {
 }
 
 describe("las variables obligatorias salen del esquema real", () => {
-  it("son las cinco sin default", () => {
+  it("son las cuatro de arranque; el token de webhook es opcional", () => {
     expect(OBLIGATORIAS).toEqual(
       expect.arrayContaining([
         "APP_BASE_URL",
         "DATABASE_URL",
         "BETTER_AUTH_SECRET",
         "ENCRYPTION_KEY",
-        "META_WEBHOOK_VERIFY_TOKEN",
       ])
     );
     expect(OBLIGATORIAS).not.toContain("META_GRAPH_API_VERSION");
+    expect(OBLIGATORIAS).not.toContain("META_WEBHOOK_VERIFY_TOKEN");
     expect(OBLIGATORIAS).not.toContain("MEDIA_DIR");
   });
 });

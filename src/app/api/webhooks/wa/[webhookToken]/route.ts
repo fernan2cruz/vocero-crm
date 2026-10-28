@@ -1,4 +1,4 @@
-import { getEnv } from "@/lib/env";
+import { configSync } from "@/server/platform/config/cache";
 import { isValidSignature, isValidWebhookToken, metaSignatureUnavailable } from "@/server/inbox/webhook";
 import { recibirEvento } from "@/server/webhooks/recibir";
 
@@ -16,8 +16,7 @@ type Params = { params: Promise<{ webhookToken: string }> };
 
 export async function GET(req: Request, { params }: Params) {
   const { webhookToken } = await params;
-  const env = getEnv();
-  if (!isValidWebhookToken(webhookToken, env.META_WEBHOOK_VERIFY_TOKEN)) {
+  if (!isValidWebhookToken(webhookToken, configSync("META_WEBHOOK_VERIFY_TOKEN"))) {
     return new Response(null, { status: 404 });
   }
 
@@ -26,7 +25,7 @@ export async function GET(req: Request, { params }: Params) {
   const token = url.searchParams.get("hub.verify_token");
   const challenge = url.searchParams.get("hub.challenge");
 
-  if (mode === "subscribe" && token === env.META_WEBHOOK_VERIFY_TOKEN) {
+  if (mode === "subscribe" && token === configSync("META_WEBHOOK_VERIFY_TOKEN")) {
     return new Response(challenge ?? "", { status: 200 });
   }
   return new Response(null, { status: 403 });
@@ -34,15 +33,14 @@ export async function GET(req: Request, { params }: Params) {
 
 export async function POST(req: Request, { params }: Params) {
   const { webhookToken } = await params;
-  const env = getEnv();
-  if (!isValidWebhookToken(webhookToken, env.META_WEBHOOK_VERIFY_TOKEN)) {
+  if (!isValidWebhookToken(webhookToken, configSync("META_WEBHOOK_VERIFY_TOKEN"))) {
     return new Response(null, { status: 404 });
   }
 
   const rawBody = await req.text();
-  if (metaSignatureUnavailable(env.META_APP_SECRET)) return new Response(null, { status: 503 });
+  if (metaSignatureUnavailable(configSync("META_APP_SECRET"))) return new Response(null, { status: 503 });
   const signature = req.headers.get("x-hub-signature-256");
-  if (!isValidSignature(rawBody, signature, env.META_APP_SECRET)) {
+  if (!isValidSignature(rawBody, signature, configSync("META_APP_SECRET"))) {
     return new Response(null, { status: 401 });
   }
 

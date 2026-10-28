@@ -35,6 +35,17 @@ export const user = pgTable("user", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+/** Configuración global de la plataforma; no pertenece a una organización. */
+export const platformConfig = pgTable("platform_config", {
+  key: text("key").primaryKey(),
+  valueCipher: text("value_cipher"),
+  valueIv: text("value_iv"),
+  valueTag: text("value_tag"),
+  valuePlain: text("value_plain"),
+  updatedBy: text("updated_by").references(() => user.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const session = pgTable("session", {
   id: text("id").primaryKey(),
   expiresAt: timestamp("expires_at").notNull(),

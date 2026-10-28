@@ -22,6 +22,7 @@
  */
 
 /** Valores que cuentan como "encendida". Cualquier otra cosa, apagada. */
+import { configSync } from "@/server/platform/config/cache";
 const ON_VALUES = new Set(["on", "1", "true", "si", "sí", "yes"]);
 
 export function parseAgendaFlag(raw: string | undefined): boolean {
@@ -29,7 +30,7 @@ export function parseAgendaFlag(raw: string | undefined): boolean {
 }
 
 /**
- * Se lee de `process.env` directo, no por `getEnv()`, igual que
+ * Se lee de la caché de plataforma (y del entorno como respaldo), sin `getEnv()`, igual que
  * `isMockEnabled()` e `isAiConfiguredByEnv()`: preguntar si una feature existe no
  * puede depender de que TODO el entorno valide. Con `getEnv()`, un turno del
  * agente reventaba —en vez de degradar— solo por consultar la bandera.
@@ -38,7 +39,7 @@ export function parseAgendaFlag(raw: string | undefined): boolean {
  * documentación y su tipo. Lo que no pasa por el validador es esta consulta.
  */
 export function agendaEnabled(): boolean {
-  return parseAgendaFlag(process.env.AGENDA);
+  return configSync("AGENDA");
 }
 
 /**

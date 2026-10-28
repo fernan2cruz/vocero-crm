@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { getEnv } from "@/lib/env";
+import { configSync } from "@/server/platform/config/cache";
 import { borrarMedia, guardarMedia, leerMedia, rutaEnDisco } from "@/lib/storage/medios";
 import { graphRequest, MetaApiError } from "@/lib/meta/client";
 import {
@@ -294,7 +295,7 @@ export async function uploadGraphMedia(
   file: { data: Buffer | Uint8Array; mimeType: string; fileName?: string }
 ): Promise<string> {
   const env = getEnv();
-  const url = `${env.META_GRAPH_BASE_URL}/${env.META_GRAPH_API_VERSION}/${credentials.phoneNumberId}/media`;
+  const url = `${env.META_GRAPH_BASE_URL}/${configSync("META_GRAPH_API_VERSION")}/${credentials.phoneNumberId}/media`;
   const form = new FormData();
   form.set("messaging_product", "whatsapp");
   form.set("type", file.mimeType);

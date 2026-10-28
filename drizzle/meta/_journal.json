@@ -232,6 +232,13 @@
       "when": 1793140000000,
       "tag": "0032_limites",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793159569966,
+      "tag": "0033_config_plataforma",
+      "breakpoints": true
     }
   ]
 }

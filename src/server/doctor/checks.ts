@@ -3,7 +3,7 @@ import postgres from "postgres";
 import type { ZodIssue } from "zod";
 import { getDb, PG_CONNECTION_OPTIONS, schema } from "@/lib/db";
 import { scoped } from "@/lib/db/tenant";
-import { envSchema, safeParseEnv, type Env } from "@/lib/env";
+import { envBaseSchema, safeParseEnv, type Env } from "@/lib/env";
 import { leerConfigDespacho } from "@/server/brains/config";
 import { GENERATED_SECRETS, PLACEHOLDER_PREFIX } from "@/server/doctor/init-env";
 import { probeBucket, probeMediaDir } from "@/server/media-dir";
@@ -44,7 +44,7 @@ export type CheckResult = {
  * obligatoria, el doctor la comprueba solo.
  */
 export function requiredEnvKeys(): string[] {
-  return Object.entries(envSchema.shape)
+  return Object.entries(envBaseSchema.shape)
     .filter(([, type]) => !type.isOptional())
     .map(([key]) => key);
 }

@@ -33,7 +33,7 @@ export function PlatformShell({ nombre, children }: { nombre: string; children: 
         {error && <p role="alert" className="w-full text-sm text-destructive">No se pudo cerrar la sesión. Inténtalo de nuevo.</p>}
       </div>
       <nav aria-label="Portal de plataforma" className="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 pb-3 sm:px-6">
-        {([ ["Resumen", "/platform"], ["Negocios", "/platform/negocios"], ["Consumo", "/platform/consumo"], ["Productividad", "/platform/productividad"], ["Usuarios", "/platform/usuarios"], ["Accesos", "/platform/accesos"], ["Auditoría", "/platform/auditoria"], ["IA y precios", "/platform/ia"] ] as const).map(([etiqueta, href]) => {
+        {([ ["Resumen", "/platform"], ["Negocios", "/platform/negocios"], ["Consumo", "/platform/consumo"], ["Productividad", "/platform/productividad"], ["Usuarios", "/platform/usuarios"], ["Accesos", "/platform/accesos"], ["Auditoría", "/platform/auditoria"], ["IA y precios", "/platform/ia"], ["Configuración", "/platform/configuracion"] ] as const).map(([etiqueta, href]) => {
           const activo = ruta === href || (href !== "/platform" && ruta.startsWith(`${href}/`));
           return <Link key={href} href={href} aria-current={activo ? "page" : undefined}
             className={`shrink-0 rounded-md px-4 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${activo ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}>{etiqueta}</Link>;

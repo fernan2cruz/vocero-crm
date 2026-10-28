@@ -1,6 +1,6 @@
 import { apiError, withAuth } from "@/lib/api";
 import { canConfigure } from "@/lib/auth/roles";
-import { getEnv } from "@/lib/env";
+import { configSync } from "@/server/platform/config/cache";
 import { isChannelEnabled } from "@/server/channels/enabled";
 import { registerWebhookForNumber } from "@/server/whatsapp/connect";
 import { getCredentialsByOrg } from "@/server/whatsapp/credentials";
@@ -25,7 +25,6 @@ export const GET = withAuth(async (session) => {
   if (plataformaEnabled() && !(await esSuperadmin(session.userId))) {
     return Response.json({ gestionado: true });
   }
-  const env = getEnv();
   const url = webhookUrl("wa");
   return Response.json({
     url,
@@ -33,9 +32,9 @@ export const GET = withAuth(async (session) => {
     messengerUrl: isChannelEnabled("messenger") ? webhookUrl("messenger") : null,
     // 022: la URL que se da de alta en Zernio para los mensajes de TikTok.
     tiktokUrl: isChannelEnabled("tiktok") ? webhookUrl("tiktok") : null,
-    verifyToken: env.META_WEBHOOK_VERIFY_TOKEN,
+    verifyToken: webhookVerifyToken(),
     isHttps: url.startsWith("https://"),
-    signatureLayer: Boolean(env.META_APP_SECRET),
+    signatureLayer: Boolean(configSync("META_APP_SECRET")),
   });
 });
 

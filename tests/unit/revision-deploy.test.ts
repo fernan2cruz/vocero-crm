@@ -22,7 +22,12 @@ docker() {
 . ./scripts/deploy.sh "$@"
 `;
 
-it.each(["pull", "up", "health", "build", "ninguno", "rollback"])("despliegue: rama %s", (fallo) => {
+// `deploy.sh` es POSIX (AlmaLinux). En Windows no hay `sh`: se omite en vez de
+// fallar por el entorno. El CI corre en Linux y ejecuta las seis ramas.
+const sinShellPosix = spawnSync("sh", ["-c", "exit 0"]).status !== 0;
+const prueba = sinShellPosix ? it.skip : it;
+
+prueba.each(["pull", "up", "health", "build", "ninguno", "rollback"])("despliegue: rama %s", (fallo) => {
   const dir = mkdtempSync(join(tmpdir(), "wassapi-deploy-"));
   try {
     mkdirSync(join(dir, "scripts"));

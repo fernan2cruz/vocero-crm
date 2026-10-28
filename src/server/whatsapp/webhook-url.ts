@@ -1,4 +1,5 @@
 import { getEnv } from "@/lib/env";
+import { configSync } from "@/server/platform/config/cache";
 
 /**
  * Dónde recibe esta instancia los webhooks de Meta.
@@ -16,7 +17,7 @@ export type WebhookChannel = "wa" | "ig" | "messenger" | "tiktok";
 
 /** Ruta (sin origen) del webhook de un canal. */
 export function webhookPath(channel: WebhookChannel = "wa"): string {
-  return `/api/webhooks/${channel}/${getEnv().META_WEBHOOK_VERIFY_TOKEN}`;
+  return `/api/webhooks/${channel}/${webhookVerifyToken()}`;
 }
 
 /** URL pública completa del webhook de un canal. */
@@ -27,5 +28,5 @@ export function webhookUrl(channel: WebhookChannel = "wa"): string {
 
 /** El verify token que Meta debe mandar en el handshake de cualquier canal. */
 export function webhookVerifyToken(): string {
-  return getEnv().META_WEBHOOK_VERIFY_TOKEN;
+  return configSync("META_WEBHOOK_VERIFY_TOKEN");
 }

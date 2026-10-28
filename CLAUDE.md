@@ -105,8 +105,11 @@ lo valida con el mismo esquema del arranque (`safeParseEnv` en
 `src/lib/env.ts`), prueba la base, `MEDIA_DIR` y el token de WhatsApp.
 Ver `.env.example` (cada una con guía inline). Las claves: `APP_BASE_URL`,
 `DATABASE_URL`, `BETTER_AUTH_SECRET`, `ENCRYPTION_KEY` (32 bytes base64),
-`META_WEBHOOK_VERIFY_TOKEN` (segmento secreto del webhook), `META_APP_SECRET`
-(opcional, firma). La IA se configura desde la app (Ajustes → IA: proveedor,
+`META_WEBHOOK_VERIFY_TOKEN` (segmento secreto del webhook; obligatorio sin
+`PLATAFORMA`, con portal se genera cifrado en la BD), `META_APP_SECRET`
+(opcional, firma). Con `PLATAFORMA=on`, tanto el App secret como el verify
+token y las banderas se administran en `/platform/configuracion` sin reiniciar.
+La IA se configura desde la app (Ajustes → IA: proveedor,
 modelo y llave cifrada, con «Probar conexión»); las variables solo son el
 respaldo mientras no haya nada guardado ahí:
 

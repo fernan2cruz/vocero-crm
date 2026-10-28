@@ -1,6 +1,6 @@
 /** Consultas globales de seguridad, con filtros explícitos; nunca leen credenciales. */
 import { and, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
-import { z } from "zod";
+import { configSync } from "./config/cache";
 import { getDb, schema } from "@/lib/db";
 import { newId } from "@/lib/db/ids";
 import { plataformaEnabled } from "./flag";
@@ -71,7 +71,7 @@ export async function barrerAccesos(): Promise<void> {
   if (e?.corriendo) return;
   if (e) e.corriendo = true;
   try {
-    const dias = z.coerce.number().int().positive().parse(process.env.ACCESS_RETENTION_DAYS ?? 180);
+    const dias = configSync("ACCESS_RETENTION_DAYS");
     while (await purgarAccesosAntiguos(dias) === 1000) { /* Lotes acotados. */ }
   } catch {
     console.error("[platform] No se pudieron purgar los accesos antiguos");

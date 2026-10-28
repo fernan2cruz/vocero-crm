@@ -6,6 +6,8 @@ import { getDb, schema } from "@/lib/db";
 import { newId } from "@/lib/db/ids";
 
 export type PlatformAction =
+  | "config.set"
+  | "config.clear"
   | "user.create"
   | "limits.set"
   | "platform.admin.grant"

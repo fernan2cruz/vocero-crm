@@ -85,6 +85,7 @@ export const accionesPlataforma = {
   "user.password_reset": "Reiniciar contraseña", "org.notes": "Editar notas del negocio",
   "limits.set": "Cambiar límites del negocio",
   "user.create": "Crear usuario",
+  "config.set": "Guardar configuración", "config.clear": "Quitar configuración",
 } satisfies Record<PlatformAction, string>;
 
 export function etiquetaAccion(accion: string): string {
@@ -95,6 +96,9 @@ export function etiquetaAccion(accion: string): string {
 export function resumenDetalle(accion: string, detail: unknown): string {
   if (!detail || typeof detail !== "object" || Array.isArray(detail)) return "Sin detalle";
   const d = detail as Record<string, unknown>;
+  if (accion === "config.set" || accion === "config.clear") {
+    return typeof d.key === "string" ? `Clave: ${d.key} · ${accion === "config.clear" ? "Vuelve al respaldo" : "Cambió"}` : "Sin detalle";
+  }
   const partes: string[] = [];
   const texto = (clave: string, etiqueta: string) => { if (typeof d[clave] === "string" && d[clave].trim()) partes.push(`${etiqueta}: ${d[clave]}`); };
   const monto = (clave: string, etiqueta: string) => { if (typeof d[clave] === "number" && Number.isSafeInteger(d[clave])) partes.push(`${etiqueta}: ${formatearMicros(d[clave])} USD`); };

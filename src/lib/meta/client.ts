@@ -1,4 +1,5 @@
 import { getEnv } from "@/lib/env";
+import { configSync } from "@/server/platform/config/cache";
 
 /**
  * Cliente propio de la Graph API de Meta (WhatsApp Cloud API).
@@ -45,7 +46,7 @@ export async function graphRequest<T>(
   }
 ): Promise<T> {
   const env = getEnv();
-  const url = `${env.META_GRAPH_BASE_URL}/${env.META_GRAPH_API_VERSION}/${path}`;
+  const url = `${env.META_GRAPH_BASE_URL}/${configSync("META_GRAPH_API_VERSION")}/${path}`;
   let res: Response;
   try {
     res = await fetch(url, {

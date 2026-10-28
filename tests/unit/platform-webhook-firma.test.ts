@@ -14,6 +14,7 @@ import { GET as ajustes } from "@/app/api/settings/webhook/route";
 
 beforeEach(() => {
   vi.stubEnv("PLATAFORMA", "on"); vi.stubEnv("CHANNELS", "whatsapp,instagram,messenger");
+  vi.stubEnv("META_WEBHOOK_VERIFY_TOKEN", "global-secreto"); vi.stubEnv("META_APP_SECRET", "");
   mocks.secret = undefined; mocks.recibir.mockReset().mockImplementation(async () => Response.json({ received: true }));
   mocks.superadmin.mockReset().mockResolvedValue(false);
   mocks.env.mockReset().mockImplementation(() => ({ META_WEBHOOK_VERIFY_TOKEN: "global-secreto", META_APP_SECRET: mocks.secret, APP_BASE_URL: "https://crm.test", CHANNELS: "whatsapp,instagram,messenger" }));
@@ -29,6 +30,7 @@ describe.each([["wa", wa, "whatsapp_business_account"], ["ig", ig, "instagram"],
   });
   it("con secreto exige firma y acepta el cuerpo firmado", async () => {
     mocks.secret = "app-secret-de-prueba";
+    vi.stubEnv("META_APP_SECRET", mocks.secret);
     expect((await handler(peticion(), params())).status).toBe(401);
     expect((await handler(peticion("sha256=incorrecta"), params())).status).toBe(401);
     const firma = "sha256=" + createHmac("sha256", mocks.secret).update(cuerpo).digest("hex");

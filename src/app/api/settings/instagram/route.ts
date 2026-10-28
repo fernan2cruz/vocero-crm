@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { configSync } from "@/server/platform/config/cache";
 import { apiError, parseBody, withAuth } from "@/lib/api";
 import {
   getInstagramCredentialsByOrg,
@@ -125,8 +126,8 @@ type Check =
 
 /** Fuente Meta: el token tiene que ser de ESA cuenta de Instagram. */
 async function verify(data: { token: string; igUserId: string }): Promise<Check> {
-  const url = `${process.env.IG_GRAPH_BASE_URL ?? "https://graph.instagram.com"}/${
-    process.env.META_GRAPH_API_VERSION ?? "v25.0"
+  const url = `${configSync("IG_GRAPH_BASE_URL")}/${
+    configSync("META_GRAPH_API_VERSION")
   }/me?fields=id,username`;
 
   let res: Response;

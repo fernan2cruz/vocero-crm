@@ -1,5 +1,5 @@
 import { createHmac } from "node:crypto";
-import { getEnv } from "@/lib/env";
+import { configSync } from "@/server/platform/config/cache";
 import { nextN } from "@/server/dev/wa-mock-state";
 
 /**
@@ -9,16 +9,15 @@ import { nextN } from "@/server/dev/wa-mock-state";
  * capa 2 de verdad.
  */
 export async function deliverToWebhook(payload: unknown): Promise<Response> {
-  const env = getEnv();
   const raw = JSON.stringify(payload);
   const port = process.env.PORT ?? "3000";
-  const url = `http://127.0.0.1:${port}/api/webhooks/wa/${env.META_WEBHOOK_VERIFY_TOKEN}`;
+  const url = `http://127.0.0.1:${port}/api/webhooks/wa/${configSync("META_WEBHOOK_VERIFY_TOKEN")}`;
 
   const headers: Record<string, string> = {
     "content-type": "application/json",
   };
-  if (env.META_APP_SECRET) {
-    const sig = createHmac("sha256", env.META_APP_SECRET)
+  if (configSync("META_APP_SECRET")) {
+    const sig = createHmac("sha256", configSync("META_APP_SECRET"))
       .update(raw, "utf8")
       .digest("hex");
     headers["x-hub-signature-256"] = `sha256=${sig}`;

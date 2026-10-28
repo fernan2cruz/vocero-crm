@@ -8,17 +8,34 @@ import { z } from "zod";
  * que en esa fase se aceptan placeholders — los valores reales llegan al boot.
  */
 
-export const envSchema = z.object({
+/** El mismo criterio de banderas que `platform/flag.ts` y las banderas de módulos. */
+const ENCENDIDA = new Set(["on", "1", "true", "si", "sí", "yes"]);
+
+export function plataformaEnElEntorno(raw: string | undefined): boolean {
+  return ENCENDIDA.has((raw ?? "").trim().toLowerCase());
+}
+
+/**
+ * Forma base del entorno, sin reglas cruzadas. `pnpm doctor` deriva de aquí
+ * las variables obligatorias (las que no son `optional` ni tienen default).
+ */
+export const envBaseSchema = z.object({
+  // Arranque fuera de BD: DOMAIN/POSTGRES_PASSWORD permiten derivar estas dos
+  // URLs en compose. La BD se necesita antes de poder leer el portal.
   APP_BASE_URL: z.string().url(),
   DATABASE_URL: z.string().min(1),
+  // Firma sesiones antes de consultar ajustes; nunca se almacena en la BD.
   BETTER_AUTH_SECRET: z.string().min(16),
+  // Llave raíz para descifrar la propia BD: moverla allí sería circular.
   ENCRYPTION_KEY: z
     .string()
     .refine((v) => Buffer.from(v, "base64").length === 32, {
       message:
         "ENCRYPTION_KEY debe ser 32 bytes en base64 (genera con: openssl rand -base64 32)",
     }),
-  META_WEBHOOK_VERIFY_TOKEN: z.string().min(8),
+  // S8: con PLATAFORMA se genera y cifra en la BD (no condiciona el arranque);
+  // sin plataforma no hay portal que lo genere y sigue siendo obligatorio.
+  META_WEBHOOK_VERIFY_TOKEN: z.string().min(8).optional(),
   META_APP_SECRET: z.string().optional(),
   META_GRAPH_API_VERSION: z.string().default("v25.0"),
   META_GRAPH_BASE_URL: z.string().url().default("https://graph.facebook.com"),
@@ -34,7 +51,8 @@ export const envSchema = z.object({
   // agenda responde 404 y la UI no la menciona. Ej.: AGENDA=on
   AGENDA: z.string().optional(),
   // 065: portal de superadmin. Apagado por defecto; sin ella toda la
-  // superficie de plataforma responde 404. Ej.: PLATAFORMA=on
+  // superficie de plataforma responde 404. No puede depender de la BD que
+  // habilita. Ej.: PLATAFORMA=on
   PLATAFORMA: z.string().optional(),
   // 016: atribucion de anuncios y reporte a la Conversions API de Meta.
   // Apagada por defecto: sin ella no se captura de que anuncio vino una
@@ -54,7 +72,8 @@ export const envSchema = z.object({
   AGENT_COALESCE_MS: z.coerce.number().int().min(0).default(6000),
   WA_MOCK_ENABLED: z.string().optional(),
   // API key de un cerebro externo que conduzca la conversación por /api/bot/*.
-  // Sin ella, toda esa superficie responde 401.
+  // Sin ella, toda esa superficie responde 401. Se comparte con Nea (otro
+  // servicio), por eso permanece fuera de la base del CRM.
   BOT_API_KEY: z.string().optional(),
   // «Quién responde a tus clientes»: el /health del cerebro externo (Nea),
   // consultado desde el servidor. Ej.: http://nea:8000/health (alias de la
@@ -85,6 +104,24 @@ export const envSchema = z.object({
   MEDIA_BUCKET_KEY_ID: z.string().optional(),
   MEDIA_BUCKET_SECRET: z.string().optional(),
   NODE_ENV: z.string().default("development"),
+});
+
+/**
+ * S8 — La obligatoriedad del verify token depende del modo:
+ * - Con `PLATAFORMA` encendida lo genera y cifra el portal en la BD; el
+ *   entorno solo es respaldo, así que puede faltar.
+ * - Sin plataforma no existe `/platform/configuracion` ni autogeneración: si
+ *   falta, todos los webhooks responderían 404 sin que nada lo delate. Se
+ *   mantiene obligatorio para que el arranque/doctor fallen con un arreglo.
+ */
+export const envSchema = envBaseSchema.superRefine((env, ctx) => {
+  if (plataformaEnElEntorno(env.PLATAFORMA) || env.META_WEBHOOK_VERIFY_TOKEN) return;
+  ctx.addIssue({
+    code: z.ZodIssueCode.custom,
+    path: ["META_WEBHOOK_VERIFY_TOKEN"],
+    message:
+      "falta: sin PLATAFORMA no hay portal que lo genere; define PLATAFORMA=on o pon el token en .env",
+  });
 });
 
 export type Env = z.infer<typeof envSchema>;
