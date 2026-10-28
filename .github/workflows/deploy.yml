@@ -38,12 +38,14 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with: { persist-credentials: false }
 
-      - name: Sincronizar el árbol en el servidor (nunca .env ni los marcadores de versión)
+      # actions-runner/ vive dentro de /opt/vocerocrm: sin esta exclusión el --delete borraría el propio runner.
+      - name: Sincronizar el árbol en el servidor (nunca .env, marcadores de versión ni el runner)
         run: |
           command -v rsync >/dev/null || { echo "falta rsync en el servidor: sudo dnf -y install rsync" >&2; exit 1; }
           test -w "$DEPLOY_PATH" || { echo "$DEPLOY_PATH no existe o no es escribible por este usuario: sudo mkdir -p $DEPLOY_PATH && sudo chown $(id -un): $DEPLOY_PATH" >&2; exit 1; }
           rsync -a --delete \
             --exclude '.git/' --exclude 'node_modules/' --exclude '.next/' --exclude 'nea-agent/' \
+            --exclude 'actions-runner/' \
             --exclude 'deploy/.env' --exclude 'deploy/.deployed_tag' --exclude 'deploy/.previous_tag' \
             ./ "$DEPLOY_PATH/"
 
