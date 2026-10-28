@@ -28,6 +28,7 @@ import {
   resetMediaDirCache,
 } from "@/server/media-dir";
 import { GET } from "@/app/api/health/route";
+import { invalidarConfig, publicarConfig, revisionConfig } from "@/server/platform/config/cache";
 
 const ENV_ORIGINAL = { ...process.env };
 let tmp: string;
@@ -40,11 +41,29 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  invalidarConfig();
   process.env = { ...ENV_ORIGINAL };
   await rm(tmp, { recursive: true, force: true });
 });
 
 describe("features: las banderas de despliegue", () => {
+  it("informa las banderas del portal aunque contradigan el entorno", () => {
+    process.env.PLATAFORMA = "on";
+    process.env.AGENDA = "off";
+    process.env.ATRIBUCION = "off";
+    process.env.CHANNELS = "whatsapp";
+    publicarConfig(new Map([
+      ["AGENDA", { valor: true, autogenerado: false }],
+      ["ATRIBUCION", { valor: true, autogenerado: false }],
+      ["CHANNELS", { valor: ["whatsapp", "instagram"], autogenerado: false }],
+    ]), revisionConfig());
+    expect(healthFeatures()).toEqual({ agenda: true, atribucion: true,
+      channels: ["whatsapp", "instagram"], media: "disco" });
+    process.env.PLATAFORMA = "off";
+    expect(healthFeatures()).toEqual({ agenda: false, atribucion: false,
+      channels: ["whatsapp"], media: "disco" });
+  });
+
   it("sin banderas: solo WhatsApp, agenda y atribución apagadas", () => {
     expect(healthFeatures({})).toEqual({
       agenda: false,

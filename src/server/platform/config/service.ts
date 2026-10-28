@@ -5,15 +5,15 @@ import { decryptSecret, encryptSecret } from "@/lib/crypto";
 import { auditar } from "@/server/platform/audit";
 import { plataformaEnabled } from "@/server/platform/flag";
 import { clavesConfig, esClaveConfig, registroConfig, respaldoConfig, type ClaveConfig } from "./registry";
-import { configSync, configVencida, guardadoConfig, instalarRefrescoConfig, invalidarConfig, publicarConfig, revisionConfig, type ValorGuardado } from "./cache";
+import { configSync, configVencida, estadoConfig, guardadoConfig, instalarRefrescoConfig, invalidarConfig, publicarConfig, revisionConfig, type ValorGuardado } from "./cache";
 
-let pendiente: Promise<void> | undefined;
 /** Un fallo descarta la caché anterior: degradamos al .env, sin imprimir errores del driver. */
 export async function calentarConfig(): Promise<void> {
   if (!plataformaEnabled()) return;
-  if (pendiente) return pendiente;
+  const estado = estadoConfig();
+  if (estado.pendiente) return estado.pendiente;
   const revision = revisionConfig();
-  pendiente = (async () => {
+  estado.pendiente = (async () => {
     const valores = new Map<ClaveConfig, ValorGuardado>();
     try {
       const db = getDb();
@@ -36,8 +36,8 @@ export async function calentarConfig(): Promise<void> {
       }
     } catch { valores.clear(); console.error("[platform] no se pudo leer la configuración; se usa el entorno"); }
     publicarConfig(valores, revision);
-  })().finally(() => { pendiente = undefined; });
-  return pendiente;
+  })().finally(() => { estado.pendiente = undefined; });
+  return estado.pendiente;
 }
 instalarRefrescoConfig(calentarConfig);
 
@@ -68,7 +68,7 @@ export async function cambiarConfig(key: ClaveConfig, valor: unknown, actorUserI
   } catch { throw new Error("No se pudo guardar la configuración"); }
   invalidarConfig();
   // Esperar un refresco anterior y luego leer el commit, incluso si perdió su revisión.
-  await pendiente;
+  await estadoConfig().pendiente;
   await calentarConfig();
 }
 

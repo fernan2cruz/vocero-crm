@@ -6,6 +6,12 @@ node_modules
 *.log
 coverage
 .playwright-mcp
+.playwright-cli
+.tmp
+.tmp-*.mjs
+output/playwright
+.dev-media
+nea-agent
 docs
 # 035: el OpenAPI se importa en /api/bot/openapi.json y entra al build.
 !docs/openapi.json

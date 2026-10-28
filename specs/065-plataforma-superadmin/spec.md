@@ -4,7 +4,8 @@
 
 **Created**: 2026-10-27
 
-**Status**: Especificada. Rebanada S1 en curso (primer trabajo delegado a Codex).
+**Status**: Implementación parcial de plataforma; S8 verificada en vivo el
+2026-10-28. Ver el estado al final para seguridad, permisos y otros pendientes.
 
 **Input**: El dueño, el 2026-10-27: «el superadmin … tendrá un portal que pueda
 gestionar a todos los usuarios, los agentes de AI, el crédito, y
@@ -51,8 +52,11 @@ sigue cerrado por defecto; el bootstrap usa un override temporal de Compose y
 
 Pruebas: `tests/unit/platform-config*.test.ts`, pruebas de doctor, firma,
 registro del webhook y UI de plataforma; guion real en
-`tests/e2e/us-configuracion-plataforma.md`. La prueba contra Postgres y navegador
-queda para la revisión acordada con Claude; esta implementación se verifica sin red.
+`tests/e2e/us-configuracion-plataforma.md`. Verificado por Codex el 2026-10-28
+contra PostgreSQL 16 descartable, Next en producción y Chrome, con dos procesos
+y fallos de conectividad. Se corrigieron la caché separada entre bundles de
+Next y health que ignoraba las banderas del portal. Arnés reproducible:
+`scripts/e2e-configuracion-plataforma.mjs`; informe: `docs/revision-s8.md`.
 
 ## El problema original
 
@@ -331,15 +335,17 @@ despachos de Nea.
 **Pendiente, de más a menos urgente**
 
 1. **Seguridad del superadmin (S6)**: pedir de nuevo la contraseña en acciones
-   destructivas, 2FA, lista de IPs permitidas, sesión corta en la plataforma, y
-   programar `purgarAccesosAntiguos`.
+   destructivas, 2FA, lista de IPs permitidas y sesión corta en la plataforma.
+   La purga de accesos ya se programa al arrancar y cada 24 h (revisado el
+   2026-10-28 en `iniciarPurgaAccesos` e `instrumentation-node`).
 2. **Límites por negocio: HECHO** (mensajes por día, destinatarios por campaña, tope
    mensual de gasto de IA; 16 verificaciones contra Postgres real y el stack de
    `deploy/`; los destinatarios por campaña solo con pruebas unitarias). Quedan dos
    cosas: los conteos son comprobaciones previas, sin reserva de cupo (envíos
-   simultáneos pueden rebasar el tope por unos pocos mensajes), y el envío de campañas
-   lleva su `enCurso` en memoria del proceso: con varias réplicas hay que reclamarlo
-   en la base.
+   simultáneos pueden rebasar el tope). El reclamo inicial de campañas y
+   destinatarios ya es atómico en BD; `enCurso` solo optimiza dentro del proceso.
+   Sigue pendiente recuperar trabajo abandonado en `sending` tras una caída,
+   mediante un lease y una estrategia de idempotencia (revisado el 2026-10-28).
 3. **Catálogo de permisos y roles (E)**: hoy hay tres roles fijos (propietario,
    administrador, miembro). Falta decidir el catálogo de permisos y si los propietarios
    pueden invitar personal bajo un tope.

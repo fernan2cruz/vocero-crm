@@ -44,3 +44,7 @@ Thumbs.db
 .dev-media/
 # Capturas y salidas de los self-tests (p. ej. scripts/e2e-responsive.mjs)
 scratch/
+output/playwright/
+.playwright-cli/
+# Cerebro externo: copia local; su código e imagen se versionan en su propio repo.
+/nea-agent/

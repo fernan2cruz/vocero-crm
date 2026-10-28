@@ -7,6 +7,7 @@ import { parseAtribucionFlag } from "@/server/attribution/flag";
 import { parseChannels } from "@/server/channels/enabled";
 import { mediaDirStatus } from "@/server/media-dir";
 import { conteoGlobal } from "@/server/webhooks/eventos";
+import { configSync } from "@/server/platform/config/cache";
 
 /**
  * `GET /api/health` — lo que una plataforma, un script o un `curl` pueden
@@ -26,9 +27,8 @@ import { conteoGlobal } from "@/server/webhooks/eventos";
  *
  * `features` (#82) dice qué banderas de despliegue están encendidas: la
  * forma de confirmar que `AGENDA=on` llegó al contenedor sin abrir Ajustes.
- * Se leen de `process.env` directo, igual que `agendaEnabled()`, y no por
- * `getEnv()`: a esta altura la BD ya respondió (y con ella validó el
- * entorno), pero la pregunta de si una feature existe nunca depende de eso.
+ * Se leen del mismo registro que las rutas: portal y respaldo del entorno.
+ * Preguntar si una feature existe no exige validar todo con `getEnv()`.
  *
  * `mediaWritable` (#82) dice si `MEDIA_DIR` se puede escribir. NO baja `ok`
  * ni el código: el CRM funciona sin adjuntos, y un healthcheck en rojo
@@ -91,13 +91,13 @@ export type FlagEnv = {
  * en el orden del catálogo, no en el de la variable, para que dos instancias
  * iguales respondan igual.
  */
-export function healthFeatures(env: FlagEnv = process.env): HealthFeatures {
-  const channels = parseChannels(env.CHANNELS);
+export function healthFeatures(env?: FlagEnv): HealthFeatures {
+  const channels = parseChannels(env ? env.CHANNELS : configSync("CHANNELS").join(","));
   return {
-    agenda: parseAgendaFlag(env.AGENDA),
+    agenda: env ? parseAgendaFlag(env.AGENDA) : configSync("AGENDA"),
     channels: CHANNEL_ORDER.filter((c) => channels.has(c)),
-    atribucion: parseAtribucionFlag(env.ATRIBUCION),
-    media: env.MEDIA_STORE?.trim().toLowerCase() === "bucket" ? "bucket" : "disco",
+    atribucion: env ? parseAtribucionFlag(env.ATRIBUCION) : configSync("ATRIBUCION"),
+    media: (env ?? process.env).MEDIA_STORE?.trim().toLowerCase() === "bucket" ? "bucket" : "disco",
   };
 }
 

@@ -1,6 +1,6 @@
 # S8 — Configuración de plataforma
 
-Revisión de Claude contra PostgreSQL y navegador. Usar una base descartable,
+Revisión contra PostgreSQL y navegador. Usar una base descartable,
 `PLATAFORMA=on`, credenciales de arranque válidas, un superadmin y un miembro de
 un negocio. Meta y los proveedores se sustituyen por los mocks existentes.
 No usar secretos reales en capturas, trazas o informes. Restaurar el entorno al terminar.
@@ -41,5 +41,7 @@ No usar secretos reales en capturas, trazas o informes. Restaurar el entorno al 
     con teclado, abrir/cerrar diálogos, comprobar foco, errores accesibles,
     copiar URL/token y cancelar «Quitar» sin cambios.
 
-No se ejecuta aquí por el acuerdo de trabajo sin red/Docker: los unitarios
-simulan la BD y el transporte; esta revisión verifica SQL, carreras reales y UI.
+Ejecutado por Codex el 2026-10-28 con PostgreSQL 16 descartable, Next en modo
+producción y Chrome. Arnés reproducible: `scripts/e2e-configuracion-plataforma.mjs`.
+Evidencia, correcciones y límites en `docs/revision-s8.md`; se sustituyó la
+restricción anterior de trabajo sin red/Docker por la verificación en vivo.

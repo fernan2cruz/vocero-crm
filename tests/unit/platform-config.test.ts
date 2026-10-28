@@ -58,6 +58,7 @@ beforeEach(async () => {
   for (const key of ["META_APP_SECRET", "META_WEBHOOK_VERIFY_TOKEN", "AGENDA", "ATRIBUCION", "CHANNELS", "ALLOW_SIGNUP", "ACCESS_RETENTION_DAYS"]) vi.stubEnv(key, "");
   servicio = await import("@/server/platform/config/service");
   cache = await import("@/server/platform/config/cache");
+  cache.invalidarConfig();
 });
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); vi.useRealTimers(); vi.restoreAllMocks(); });
 
@@ -118,7 +119,17 @@ describe("S8 configuración de plataforma", () => {
     const segundo = await import("@/server/platform/config/service");
     const [a, b] = await Promise.all([primero.valorDeConfig("META_WEBHOOK_VERIFY_TOKEN"), segundo.valorDeConfig("META_WEBHOOK_VERIFY_TOKEN")]);
     expect(a).toBe(b); expect(a).toHaveLength(64); expect(estado.filas.size).toBe(1);
-    expect(estado.escrituras).toHaveBeenCalledTimes(2);
+    expect(estado.escrituras).toHaveBeenCalledTimes(1);
+  });
+  it("comparte el calentamiento de instrumentation con otra evaluación del módulo en Next", async () => {
+    const primeraCache = cache;
+    await servicio.cambiarConfig("META_APP_SECRET", "secreto-compartido-1234", "admin");
+    vi.resetModules();
+    const otraCache = await import("@/server/platform/config/cache");
+    expect(otraCache.configSync("META_APP_SECRET")).toBe("secreto-compartido-1234");
+    const otroServicio = await import("@/server/platform/config/service");
+    await otroServicio.cambiarConfig("AGENDA", true, "admin");
+    expect(primeraCache.configSync("AGENDA")).toBe(true);
   });
   it("no genera ni guarda un token cuando existe respaldo en el entorno", async () => {
     vi.stubEnv("META_WEBHOOK_VERIFY_TOKEN", "token-del-entorno");
