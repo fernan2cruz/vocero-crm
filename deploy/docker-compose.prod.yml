@@ -68,7 +68,7 @@ services:
   cloudflared:
     profiles: ["tunnel"]
     <<: *hardened
-    image: cloudflare/cloudflared:2024.12.2
+    image: cloudflare/cloudflared:2026.10.5
     command: ["tunnel", "--no-autoupdate", "run"]
     environment:
       TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
