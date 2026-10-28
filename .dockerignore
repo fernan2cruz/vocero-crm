@@ -12,6 +12,9 @@ coverage
 output/playwright
 .dev-media
 nea-agent
+# El runner de GitHub vive en /opt/vocerocrm/actions-runner (contexto del build en el servidor):
+# trae su propio TypeScript y copias del repo; Next los tipificaría y el build fallaría.
+actions-runner
 docs
 # 035: el OpenAPI se importa en /api/bot/openapi.json y entra al build.
 !docs/openapi.json
