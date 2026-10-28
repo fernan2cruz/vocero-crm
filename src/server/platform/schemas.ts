@@ -1,6 +1,13 @@
 import { z } from "zod";
 
 export const motivoSchema = z.string().trim().min(3).max(300);
+export const crearUsuarioSchema = z.object({
+  organizationId: z.string().trim().min(1).max(200),
+  name: z.string().trim().min(1).max(120),
+  email: z.string().trim().email().toLowerCase(),
+  role: z.enum(["admin", "member"]),
+  tempPassword: z.string().min(8).max(128).optional(),
+}).strict();
 export const crearNegocioSchema = z.object({
   name: z.string().trim().min(1).max(120),
   ownerName: z.string().trim().min(1).max(120),

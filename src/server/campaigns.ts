@@ -95,7 +95,7 @@ function dto(
   templateName: string,
   n: Record<string, number> = {}
 ): CampaignDto {
-  const pendientes = n.pending ?? 0;
+  const pendientes = (n.pending ?? 0) + (n.sending ?? 0);
   const enviados = n.sent ?? 0;
   const fallidos = n.failed ?? 0;
   const omitidos = n.skipped ?? 0;
@@ -325,17 +325,27 @@ export async function enviarCampana(input: {
     return { ok: false, code: "not_connected", message: "Conecta o reconecta el número de WhatsApp antes de enviar" };
   }
   if (enCurso.has(id)) return { ok: true };
-
-  await getDb()
-    .update(schema.campaign)
-    .set({ status: "sending", startedAt: sql`coalesce(${schema.campaign.startedAt}, now())` })
-    .where(eq(schema.campaign.id, id));
-
   enCurso.add(id);
-  void ejecutar(organizationId, id, detalle.templateId, detalle.variables)
-    .catch((err) => console.error("[campaña] el envío falló:", err))
-    .finally(() => enCurso.delete(id));
-  return { ok: true };
+  try {
+    // La reserva local precede al primer await; la base decide entre procesos.
+    const reclamadas = await getDb()
+      .update(schema.campaign)
+      .set({ status: "sending", startedAt: sql`coalesce(${schema.campaign.startedAt}, now())` })
+      .where(scoped(schema.campaign.organizationId, organizationId,
+        eq(schema.campaign.id, id), eq(schema.campaign.status, "draft")))
+      .returning({ id: schema.campaign.id });
+    if (!reclamadas.length) {
+      enCurso.delete(id);
+      return { ok: true };
+    }
+    void ejecutar(organizationId, id, detalle.templateId, detalle.variables)
+      .catch((err) => console.error("[campaña] el envío falló:", err))
+      .finally(() => enCurso.delete(id));
+    return { ok: true };
+  } catch (error) {
+    enCurso.delete(id);
+    throw error;
+  }
 }
 
 async function ejecutar(
@@ -356,7 +366,9 @@ async function ejecutar(
         .from(schema.campaignRecipient)
         .innerJoin(schema.contact, eq(schema.contact.id, schema.campaignRecipient.contactId))
         .where(
-          and(
+          scoped(
+            schema.campaignRecipient.organizationId,
+            organizationId,
             eq(schema.campaignRecipient.campaignId, id),
             eq(schema.campaignRecipient.status, "pending")
           )
@@ -366,27 +378,49 @@ async function ejecutar(
       return rows;
     },
     enviar: async (d, valores) => {
-      const [existente] = await db
-        .select({ id: schema.conversation.id })
-        .from(schema.conversation)
-        .where(
-          scoped(
-            schema.conversation.organizationId,
-            organizationId,
-            eq(schema.conversation.contactId, d.contactId),
-            eq(schema.conversation.isTest, false)
+      const reclamados = await db.update(schema.campaignRecipient).set({ status: "sending" })
+        .where(scoped(schema.campaignRecipient.organizationId, organizationId,
+          eq(schema.campaignRecipient.id, d.id), eq(schema.campaignRecipient.status, "pending")))
+        .returning({ id: schema.campaignRecipient.id });
+      if (!reclamados.length) throw Object.assign(new Error("Destinatario ya reclamado"), { code: "ya_reclamado" });
+      try {
+        const [existente] = await db
+          .select({ id: schema.conversation.id })
+          .from(schema.conversation)
+          .where(
+            scoped(
+              schema.conversation.organizationId,
+              organizationId,
+              eq(schema.conversation.contactId, d.contactId),
+              eq(schema.conversation.isTest, false)
+            )
           )
-        )
-        .limit(1);
-      const conversationId =
-        existente?.id ?? (await getOrCreateConversation(organizationId, d.contactId)).id;
-      await sendTemplate({ organizationId, conversationId, templateId, variables: valores });
+          .limit(1);
+        const conversationId =
+          existente?.id ?? (await getOrCreateConversation(organizationId, d.contactId)).id;
+        if (plataformaEnabled() && await estadoDeNegocio(organizationId) === "suspended") {
+          await db.update(schema.campaignRecipient).set({ status: "pending", detail: "negocio_suspendido" })
+            .where(scoped(schema.campaignRecipient.organizationId, organizationId,
+              eq(schema.campaignRecipient.id, d.id), eq(schema.campaignRecipient.status, "sending")));
+          throw Object.assign(new Error("negocio_suspendido"), { code: "negocio_suspendido" });
+        }
+        await sendTemplate({ organizationId, conversationId, templateId, variables: valores });
+      } catch (error) {
+        // Solo los rechazos previos al envío admiten reanudar; un resultado incierto no se repite.
+        if ((error as { code?: string }).code && ["not_connected", "reconnect_required", "sandbox_violation", "limite_diario"].includes((error as { code: string }).code)) {
+          await db.update(schema.campaignRecipient).set({ status: "pending" })
+            .where(scoped(schema.campaignRecipient.organizationId, organizationId,
+              eq(schema.campaignRecipient.id, d.id), eq(schema.campaignRecipient.status, "sending")));
+        }
+        throw error;
+      }
     },
     marcar: async (rid, estado, detail) => {
       await db
         .update(schema.campaignRecipient)
         .set({ status: estado, detail, sentAt: estado === "sent" ? new Date() : null })
-        .where(eq(schema.campaignRecipient.id, rid));
+        .where(scoped(schema.campaignRecipient.organizationId, organizationId,
+          eq(schema.campaignRecipient.id, rid), inArray(schema.campaignRecipient.status, estado === "skipped" ? ["pending"] : ["sending"])));
     },
     cancelada: async () => {
       const [c] = await db

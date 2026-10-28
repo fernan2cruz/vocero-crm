@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * 048 — Wassapi instalable en el celular: el manifest sale de la marca, los
@@ -11,6 +11,7 @@ import { describe, expect, it, vi } from "vitest";
 const { getBrandingContext } = vi.hoisted(() => ({ getBrandingContext: vi.fn() }));
 vi.mock("@/server/branding", () => ({
   getBrandingContext,
+  getRequestBrandingContext: getBrandingContext,
   getBranding: async () => (await getBrandingContext()).branding,
 }));
 vi.mock("@/server/whatsapp/media", () => ({ readMediaFile: vi.fn() }));
@@ -26,6 +27,8 @@ import {
 import { GET as icono } from "@/app/api/branding/app-icon/route";
 
 const marca = { name: "Ferretería El Martillo", accent: "#0d5bff", favicon: null };
+beforeEach(() => vi.stubEnv("PLATAFORMA", "off"));
+afterEach(() => vi.unstubAllEnvs());
 
 describe("el manifest", () => {
   it("sale de la marca, sin «Wassapi» cableado", () => {
@@ -94,6 +97,13 @@ describe("los parámetros del icono", () => {
 });
 
 describe("la ruta del icono dibuja un PNG del tamaño pedido", () => {
+  it("en plataforma el PNG de la sesión nunca se guarda en caché compartida", async () => {
+    vi.stubEnv("PLATAFORMA", "on");
+    getBrandingContext.mockResolvedValue({ organizationId: "org_1", branding: DEFAULT_BRANDING });
+    const respuesta = await icono(new Request("http://localhost/api/branding/app-icon?size=192&v=g1"));
+    expect(respuesta.headers.get("cache-control")).toBe("private, no-store");
+    await respuesta.arrayBuffer();
+  });
   /** Ancho y alto del IHDR de un PNG. */
   const dimensiones = (b: Uint8Array) => {
     const dv = new DataView(b.buffer, b.byteOffset);

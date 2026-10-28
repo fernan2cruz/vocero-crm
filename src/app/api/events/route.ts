@@ -1,5 +1,6 @@
 import { requireSession, UnauthorizedError } from "@/lib/auth/session";
 import { subscribe } from "@/server/events/bus";
+import { plataformaEnabled } from "@/server/platform/flag";
 
 /**
  * Canal SSE de la bandeja (contrato sse.md).
@@ -46,9 +47,23 @@ export async function GET(req: Request) {
       });
 
       const heartbeat = setInterval(() => send(`: ping\n\n`), HEARTBEAT_MS);
+      let comprobando = false;
+      const revalidacion = plataformaEnabled() ? setInterval(async () => {
+        if (comprobando) return;
+        comprobando = true;
+        try {
+          // Headers capturados al abrir: no dependemos del contexto de Next
+          // dentro del temporizador ni de una sesión cacheada en la cookie.
+          const actual = await requireSession(req.headers);
+          if (actual.userId !== session.userId || actual.organizationId !== organizationId) cleanup?.();
+        } catch {
+          cleanup?.();
+        } finally { comprobando = false; }
+      }, 30_000) : null;
 
       cleanup = () => {
         clearInterval(heartbeat);
+        if (revalidacion) clearInterval(revalidacion);
         unsubscribe();
         try {
           controller.close();

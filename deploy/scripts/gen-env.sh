@@ -22,4 +22,6 @@ sub BOT_API_KEY "$(openssl rand -hex 32)"
 
 echo "deploy/.env creado (permisos 600)."
 echo "Revisa lo opcional (TLS, correo de Let's Encrypt, IA) y guarda una copia aparte."
+echo "IMPORTANTE: con PLATAFORMA=on, META_APP_SECRET es OBLIGATORIO (App Secret de Meta). Sin él los webhooks"
+echo "de Meta responden 503. Pégalo en deploy/.env antes del primer despliegue."
 echo "Siguiente paso:  ./scripts/deploy.sh --build v1"

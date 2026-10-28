@@ -5,6 +5,7 @@ import { leerConfigDespacho } from "@/server/brains/config";
 import { iniciarWorker, tanda } from "@/server/dispatch/worker";
 import { cifrarSecretosEnClaro } from "@/server/zernio/secreto-guardado";
 import { barrido, iniciarBarrido } from "@/server/webhooks/worker";
+import { iniciarPurgaAccesos } from "@/server/platform/accesos";
 
 /**
  * 008 — Aviso al arranque si MEDIA_DIR no es escribible. Sin esto, el primer
@@ -120,6 +121,7 @@ export function resumeDispatch(): void {
  * evento en proceso cuya reserva venció, o uno pendiente de reintento).
  */
 export function resumeWebhooks(): void {
+  iniciarPurgaAccesos();
   iniciarBarrido();
   void barrido();
 }

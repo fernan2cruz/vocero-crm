@@ -1,10 +1,42 @@
 import { and, asc, eq, or, sql } from "drizzle-orm";
 import { hashPassword } from "better-auth/crypto";
+import { randomUUID } from "node:crypto";
+import { newId } from "@/lib/db/ids";
 import { getDb, schema } from "@/lib/db";
 import { normalizeText } from "@/lib/search";
 import { auditar } from "@/server/platform/audit";
 import { generarContrasenaTemporal } from "@/server/platform/password";
-import { listarUsuariosSchema, motivoSchema } from "@/server/platform/schemas";
+import { crearUsuarioSchema, listarUsuariosSchema, motivoSchema } from "@/server/platform/schemas";
+import type { z } from "zod";
+
+/** Alta atómica sin abrir el registro público ni crear sesiones o negocios. */
+export async function crearUsuario(input: z.input<typeof crearUsuarioSchema> & { actorUserId: string }) {
+  const { actorUserId, ...cuerpo } = input;
+  const datos = crearUsuarioSchema.parse(cuerpo);
+  const contrasenaTemporal = datos.tempPassword ?? generarContrasenaTemporal();
+  const password = await hashPassword(contrasenaTemporal);
+  return getDb().transaction(async (tx) => {
+    const [negocio] = await tx.select({ id: schema.organization.id }).from(schema.organization)
+      .where(eq(schema.organization.id, datos.organizationId)).for("share");
+    if (!negocio) return { ok: false as const, code: "not_found" as const };
+    const [existente] = await tx.select({ id: schema.user.id }).from(schema.user)
+      .where(sql`lower(${schema.user.email}) = ${datos.email}`).limit(1);
+    if (existente) return { ok: false as const, code: "email_taken" as const };
+    const userId = randomUUID();
+    const [usuario] = await tx.insert(schema.user).values({ id: userId, name: datos.name, email: datos.email })
+      .onConflictDoNothing({ target: schema.user.email }).returning({ id: schema.user.id });
+    if (!usuario) return { ok: false as const, code: "email_taken" as const };
+    // Mismo formato de credencial y hash que Better Auth y el reinicio de contraseña.
+    await tx.insert(schema.account).values({ id: randomUUID(), userId, accountId: userId,
+      providerId: "credential", password });
+    await tx.insert(schema.member).values({ id: newId("member"), userId,
+      organizationId: datos.organizationId, role: datos.role });
+    await auditar({ actorUserId, action: "user.create", organizationId: datos.organizationId,
+      targetUserId: userId, detail: { name: datos.name, email: datos.email, role: datos.role } }, tx);
+    return { ok: true as const, usuario: { id: userId, name: datos.name, email: datos.email,
+      organizationId: datos.organizationId, role: datos.role }, contrasenaTemporal };
+  });
+}
 
 export { generarContrasenaTemporal } from "@/server/platform/password";
 export { usuarioDesactivado } from "@/server/platform/estado";

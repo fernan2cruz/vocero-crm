@@ -5,6 +5,8 @@ import { isChannelEnabled } from "@/server/channels/enabled";
 import { registerWebhookForNumber } from "@/server/whatsapp/connect";
 import { getCredentialsByOrg } from "@/server/whatsapp/credentials";
 import { webhookUrl, webhookVerifyToken } from "@/server/whatsapp/webhook-url";
+import { plataformaEnabled } from "@/server/platform/flag";
+import { esSuperadmin } from "@/server/platform/admins";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +21,10 @@ export const dynamic = "force-dynamic";
  * viajan las tres URLs y la pantalla de cada canal enseña la suya. Las de un
  * canal apagado van en null: no existen en esta instancia (ADR-001).
  */
-export const GET = withAuth(async () => {
+export const GET = withAuth(async (session) => {
+  if (plataformaEnabled() && !(await esSuperadmin(session.userId))) {
+    return Response.json({ gestionado: true });
+  }
   const env = getEnv();
   const url = webhookUrl("wa");
   return Response.json({

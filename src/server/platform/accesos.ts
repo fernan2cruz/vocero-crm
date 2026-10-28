@@ -1,5 +1,6 @@
 /** Consultas globales de seguridad, con filtros explícitos; nunca leen credenciales. */
-import { and, desc, eq, gte, lt, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
+import { z } from "zod";
 import { getDb, schema } from "@/lib/db";
 import { newId } from "@/lib/db/ids";
 import { plataformaEnabled } from "./flag";
@@ -50,10 +51,41 @@ export async function registrarAcceso(input: {
 export async function purgarAccesosAntiguos(dias = 180) {
   if (!plataformaEnabled()) return 0;
   if (!Number.isInteger(dias) || dias < 1) throw new Error("Antigüedad inválida");
-  const filas = await getDb().delete(schema.loginEvent)
+  const db = getDb();
+  const antiguas = db.select({ id: schema.loginEvent.id }).from(schema.loginEvent)
     .where(lt(schema.loginEvent.createdAt, new Date(Date.now() - dias * 86_400_000)))
+    .limit(1000);
+  const filas = await db.delete(schema.loginEvent)
+    .where(inArray(schema.loginEvent.id, antiguas))
     .returning({ id: schema.loginEvent.id });
   return filas.length;
+}
+
+const g = globalThis as unknown as {
+  __voceroAccesosBarrido?: { timer: ReturnType<typeof setInterval>; corriendo: boolean };
+};
+
+export async function barrerAccesos(): Promise<void> {
+  if (!plataformaEnabled()) return;
+  const e = g.__voceroAccesosBarrido;
+  if (e?.corriendo) return;
+  if (e) e.corriendo = true;
+  try {
+    const dias = z.coerce.number().int().positive().parse(process.env.ACCESS_RETENTION_DAYS ?? 180);
+    while (await purgarAccesosAntiguos(dias) === 1000) { /* Lotes acotados. */ }
+  } catch {
+    console.error("[platform] No se pudieron purgar los accesos antiguos");
+  } finally {
+    if (e) e.corriendo = false;
+  }
+}
+
+export function iniciarPurgaAccesos(): void {
+  if (!plataformaEnabled() || g.__voceroAccesosBarrido) return;
+  const timer = setInterval(() => void barrerAccesos(), 86_400_000);
+  timer.unref?.();
+  g.__voceroAccesosBarrido = { timer, corriendo: false };
+  void barrerAccesos();
 }
 
 export async function eventosDeAcceso(input: {

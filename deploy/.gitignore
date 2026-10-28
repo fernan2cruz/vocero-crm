@@ -1,4 +1,5 @@
 .env
 .deployed_tag
+.previous_tag
 certs/
 backups/

@@ -1,4 +1,4 @@
-import { desc, eq, inArray, notInArray, or, sql } from "drizzle-orm";
+import { desc, eq, inArray, isNull, notInArray, or, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { scoped } from "@/lib/db/tenant";
 import type { ContactTagDto } from "@/lib/contact-tags";
@@ -126,6 +126,7 @@ export async function listContacts(
         schema.contact.organizationId,
         organizationId,
         search,
+        includeArchived ? undefined : isNull(schema.contact.archivedAt),
         stageContactIds ? inArray(schema.contact.id, stageContactIds) : undefined,
         tagContactIds ? inArray(schema.contact.id, tagContactIds) : undefined,
         tipo === "cliente" ? inArray(schema.contact.id, [...clienteIds]) : undefined,
@@ -139,7 +140,7 @@ export async function listContacts(
     .orderBy(desc(schema.contact.updatedAt))
     .limit(limit);
 
-  const visibles = rows.filter((c) => includeArchived || !c.archivedAt);
+  const visibles = rows;
   const tagsPorContacto = await tagsByContact(
     organizationId,
     visibles.map((c) => c.id)

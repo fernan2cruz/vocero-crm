@@ -39,6 +39,7 @@ type Connection = {
 };
 
 type WebhookInfo = {
+  gestionado?: boolean;
   messengerUrl: string | null;
   verifyToken: string;
   isHttps: boolean;
@@ -271,7 +272,7 @@ export function MessengerClient() {
           </span>
         </p>
       ) : (
-        webhook?.messengerUrl && (
+        webhook?.gestionado ? <p className="text-sm text-muted-foreground">Webhook: Lo administra la plataforma</p> : webhook?.messengerUrl && (
           <Card>
             <CardHeader>
               <CardTitle>Webhook de Messenger</CardTitle>

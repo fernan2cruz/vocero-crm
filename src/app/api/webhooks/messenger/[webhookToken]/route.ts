@@ -1,5 +1,5 @@
 import { getEnv } from "@/lib/env";
-import { isValidSignature, isValidWebhookToken } from "@/server/inbox/webhook";
+import { isValidSignature, isValidWebhookToken, metaSignatureUnavailable } from "@/server/inbox/webhook";
 import {
   channelDisabledResponse,
   isChannelEnabled,
@@ -62,6 +62,7 @@ export async function POST(req: Request, { params }: Params) {
   const isMeta = looksLikeMetaPayload(payload, "page");
 
   if (isMeta) {
+    if (metaSignatureUnavailable(env.META_APP_SECRET)) return new Response(null, { status: 503 });
     // Meta firma cada entrega con el App Secret. Sin esta capa, quien conozca
     // la URL secreta puede inyectar mensajes falsos: el agente los contestaría
     // enviando un mensaje REAL desde la página al destinatario que el atacante

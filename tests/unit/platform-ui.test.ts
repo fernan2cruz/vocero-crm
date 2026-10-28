@@ -77,7 +77,7 @@ describe("accesos y auditoría", () => {
 
 describe("ayudas de seguridad", () => {
   it("traduce todas las acciones del contrato y tolera acciones futuras y claves de Object", () => {
-    expect(Object.values(accionesPlataforma)).toEqual(["Otorgar superadmin", "Retirar superadmin", "Crear negocio", "Suspender negocio", "Reactivar negocio", "Ajustar crédito", "Crédito de IA bajo", "Crédito de IA agotado", "Guardar llave de IA", "Revocar llave de IA", "Cambiar modo de IA", "Cambiar precio de IA", "Cerrar sesiones", "Desactivar usuario", "Reactivar usuario", "Cambiar rol", "Reiniciar contraseña", "Editar notas del negocio", "Cambiar límites del negocio"]);
+    expect(Object.values(accionesPlataforma)).toEqual(["Otorgar superadmin", "Retirar superadmin", "Crear negocio", "Suspender negocio", "Reactivar negocio", "Ajustar crédito", "Crédito de IA bajo", "Crédito de IA agotado", "Guardar llave de IA", "Revocar llave de IA", "Cambiar modo de IA", "Cambiar precio de IA", "Cerrar sesiones", "Desactivar usuario", "Reactivar usuario", "Cambiar rol", "Reiniciar contraseña", "Editar notas del negocio", "Cambiar límites del negocio", "Crear usuario"]);
     for (const [a, texto] of Object.entries(accionesPlataforma)) expect(etiquetaAccion(a)).toBe(texto);
     for (const a of ["futura.accion", "toString", "__proto__"]) expect(etiquetaAccion(a)).toBe(a);
   });
@@ -92,6 +92,7 @@ describe("ayudas de seguridad", () => {
     expect(resumenDetalle("ai_key.set", { scope: "platform", token: "secreto", last4: "1234" })).toBe("Llave de plataforma");
     expect(resumenDetalle("org.create", { name: "Tienda", ownerEmail: "a@b.test" })).toBe("Nombre: Tienda · Propietario: a@b.test");
     expect(resumenDetalle("org.notes", { notes: null })).toBe("Notas eliminadas");
+    expect(resumenDetalle("user.create", { name: "Ana", email: "ana@ejemplo.test", role: "member", tempPassword: "secreto" })).toBe("Nombre: Ana · Correo: ana@ejemplo.test · Rol: Miembro");
     for (const d of [null, [], "crudo", 5]) expect(resumenDetalle("nueva", d)).toBe("Sin detalle");
     expect(resumenDetalle("credit.adjust", { amountMicros: Infinity, token: "secreto", reason: {} })).toBe("Sin detalle adicional");
   });

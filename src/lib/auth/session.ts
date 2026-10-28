@@ -21,9 +21,12 @@ export class UnauthorizedError extends Error {
  * Sesión + organización activa para route handlers y server components.
  * Lanza UnauthorizedError si no hay sesión u organización.
  */
-export async function requireSession(): Promise<SessionContext> {
+export async function requireSession(requestHeaders?: Headers): Promise<SessionContext> {
   const auth = getAuth();
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await auth.api.getSession({
+    headers: requestHeaders ?? await headers(),
+    ...(requestHeaders ? { query: { disableCookieCache: true } } : {}),
+  });
   if (!session) throw new UnauthorizedError();
   if (plataformaEnabled() && await usuarioDesactivado(session.user.id)) {
     throw new UnauthorizedError("Cuenta desactivada");

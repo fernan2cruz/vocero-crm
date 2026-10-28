@@ -103,6 +103,7 @@ services:
       AGENT_COALESCE_MS: ${AGENT_COALESCE_MS:-6000}
       # Módulos opcionales: vacío = apagado.
       PLATAFORMA: ${PLATAFORMA:-}
+      ACCESS_RETENTION_DAYS: ${ACCESS_RETENTION_DAYS:-180}
       CHANNELS: ${CHANNELS:-}
       AGENDA: ${AGENDA:-}
       ATRIBUCION: ${ATRIBUCION:-}
@@ -138,6 +139,7 @@ services:
       ALLOWED_WA_IDS: ${ALLOWED_WA_IDS:-}
       VOCERO_MODE: ${NEA_VOCERO_MODE:-}
       CRM_SURFACE: ${NEA_CRM_SURFACE:-}
+      DISPATCH_RETENTION_DAYS: ${DISPATCH_RETENTION_DAYS:-14}
       # Despachos que se atienden a la vez (de negocios distintos; un negocio nunca ocupa más de uno).
       # Solo lo entiende la Nea del fork; la oficial lo ignora.
       DISPATCH_WORKERS: ${NEA_DISPATCH_WORKERS:-4}

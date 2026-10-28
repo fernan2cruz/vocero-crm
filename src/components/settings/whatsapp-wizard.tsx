@@ -46,7 +46,7 @@ type LastRegistration = { result: WebhookRegistration; from: "save" | "button" }
 
 export function WhatsappWizard() {
   const [connection, setConnection] = useState<Connection | null>(null);
-  const [webhook, setWebhook] = useState<WebhookInfo | null>(null);
+  const [webhook, setWebhook] = useState<WebhookInfo | { gestionado: true } | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [registration, setRegistration] = useState<LastRegistration | null>(
     null
@@ -124,7 +124,7 @@ export function WhatsappWizard() {
         onSaved={() => void refetch()}
       />
 
-      {webhook && (
+      {webhook && ("gestionado" in webhook ? <p className="text-sm text-muted-foreground">Webhook: Lo administra la plataforma</p> :
         <WebhookCard
           webhook={webhook}
           connection={connection}

@@ -39,6 +39,7 @@ type Connection = {
 };
 
 type WebhookInfo = {
+  gestionado?: boolean;
   instagramUrl: string | null;
   verifyToken: string;
   signatureLayer: boolean;
@@ -278,7 +279,7 @@ export function InstagramClient() {
           </span>
         </p>
       ) : (
-        webhook?.instagramUrl && (
+        webhook?.gestionado ? <p className="text-sm text-muted-foreground">Webhook: Lo administra la plataforma</p> : webhook?.instagramUrl && (
           <Card>
             <CardHeader>
               <CardTitle>Webhook de Instagram</CardTitle>

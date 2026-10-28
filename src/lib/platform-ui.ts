@@ -84,6 +84,7 @@ export const accionesPlataforma = {
   "user.disable": "Desactivar usuario", "user.enable": "Reactivar usuario", "user.role": "Cambiar rol",
   "user.password_reset": "Reiniciar contraseña", "org.notes": "Editar notas del negocio",
   "limits.set": "Cambiar límites del negocio",
+  "user.create": "Crear usuario",
 } satisfies Record<PlatformAction, string>;
 
 export function etiquetaAccion(accion: string): string {
@@ -129,6 +130,9 @@ export function resumenDetalle(accion: string, detail: unknown): string {
     texto("provider", "Proveedor"); texto("model", "Modelo");
   } else if (accion === "org.create") {
     texto("name", "Nombre"); texto("ownerEmail", "Propietario");
+  } else if (accion === "user.create") {
+    texto("name", "Nombre"); texto("email", "Correo");
+    if (d.role === "admin" || d.role === "member") partes.push(`Rol: ${etiquetaRol(d.role)}`);
   } else if (accion === "org.notes") partes.push(d.notes === null ? "Notas eliminadas" : "Notas actualizadas");
   return partes.join(" · ") || "Sin detalle adicional";
 }

@@ -39,6 +39,8 @@ git checkout feat/066-marca-wassapi          # o la rama que quieras desplegar
 Edita `deploy/.env`:
 
 - `CADDY_GLOBAL=email admin@tudominio.com` (avisos de Let's Encrypt).
+- `META_APP_SECRET` **obligatorio con `PLATAFORMA=on`**: copia el App Secret desde Meta → Configuración → Básica.
+  Sin él, los webhooks de Meta (WhatsApp, Instagram y Messenger) responden 503; con él exigen firma válida.
 - `ALLOW_SIGNUP=true` solo hasta crear la primera cuenta (paso 3).
 - `ALLOWED_WA_IDS=` con tu número mientras pruebas.
 
@@ -88,12 +90,17 @@ La URL del webhook de cada número en Meta es `https://crm.tudominio.com/api/web
 | Estado | `docker compose -f docker-compose.prod.yml ps` |
 | Logs | `docker compose -f docker-compose.prod.yml logs -f app` |
 | Actualizar | `git pull && ./scripts/deploy.sh --build v2` (cambia la etiqueta en cada versión) |
-| Reversión manual | `./scripts/deploy.sh --build <etiqueta anterior>` (la imagen anterior sigue en el servidor) |
+| Reversión manual | `./scripts/deploy.sh --rollback` (usa `.previous_tag` y la imagen local, sin construir ni descargar) |
 | Respaldo ahora | `docker compose -f docker-compose.prod.yml exec -e BACKUP_DIR=/backups/postgres backup sh /scripts/backup-postgres.sh` |
 | Cloudflare Tunnel | `CADDY_TLS=tls internal`, `BIND_ADDR=127.0.0.1`, `CLOUDFLARE_TUNNEL_TOKEN=…` y `--profile tunnel` |
 
 Las migraciones corren al arrancar la app. La reversión devuelve la imagen, no el esquema de la base: toda migración
 debe ser aditiva (primero se añade, después se retira lo viejo).
+
+Si falla la construcción, se aborta antes de cambiar `.env`. Si falla la descarga, el arranque de Compose o la salud,
+se restaura la etiqueta desplegada y se arranca su imagen local; el comando sale con error incluso si la reversión
+funciona. Sin versión previa se conserva el intento para inspección. Cada despliegue sano guarda la etiqueta
+desplazada en `.previous_tag`; `--rollback` exige ese archivo y pasa por el mismo respaldo y control de salud.
 
 ## 7. Respaldos
 

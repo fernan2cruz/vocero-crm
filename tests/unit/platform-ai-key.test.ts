@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({ negocio: vi.fn(), public: vi.fn(), secret: vi.fn(), save: vi.fn(), del: vi.fn(), audit: vi.fn(), probe: vi.fn() }));
+const tx = vi.hoisted(() => ({}));
+vi.mock("@/lib/db", async (original) => ({ ...await original<typeof import("@/lib/db")>(),
+  getDb: () => ({ transaction: (fn: (transaction: object) => Promise<unknown>) => fn(tx) }) }));
 vi.mock("@/server/platform/guard", () => ({ withSuperadmin: (fn: (s: { userId: string }, ...args: unknown[]) => Promise<Response>) =>
   (...args: unknown[]) => fn({ userId: "superadmin" }, ...args) }));
 vi.mock("@/server/platform/tenants", () => ({ obtenerNegocio: m.negocio }));
@@ -45,15 +48,15 @@ describe("PL-8: llave de IA por negocio", () => {
   });
   it("PUT guarda y audita solo campos explícitos sin token", async () => {
     const res = await PUT(request(), ctx); expect(res.status).toBe(200); expect(await res.json()).toEqual(vista);
-    expect(m.save).toHaveBeenCalledWith({ organizationId: "otro-negocio", ...datos, baseUrl: cred.baseUrl });
+    expect(m.save).toHaveBeenCalledWith({ organizationId: "otro-negocio", ...datos, baseUrl: cred.baseUrl }, tx);
     expect(m.audit).toHaveBeenCalledWith({ actorUserId: "superadmin", action: "ai_key.set", organizationId: "otro-negocio",
-      targetUserId: null, detail: { scope: "org", provider: cred.provider, model: cred.model, last4: "1234" } });
+      targetUserId: null, detail: { scope: "org", provider: cred.provider, model: cred.model, last4: "1234" } }, tx);
     expect(JSON.stringify(m.audit.mock.calls)).not.toContain(token);
   });
   it("PUT sin token cambia modelo sin inventar una llave", async () => {
     const body = { provider: "deepseek", model: "otro" };
     expect((await PUT(request(body), ctx)).status).toBe(200);
-    expect(m.save).toHaveBeenCalledWith({ organizationId: "otro-negocio", ...body, baseUrl: cred.baseUrl });
+    expect(m.save).toHaveBeenCalledWith({ organizationId: "otro-negocio", ...body, baseUrl: cred.baseUrl }, tx);
     m.audit.mockClear(); m.save.mockRejectedValue(new AiCredentialError("sin_token"));
     expect((await PUT(request(body), ctx)).status).toBe(422); expect(m.audit).not.toHaveBeenCalled();
   });
@@ -67,9 +70,9 @@ describe("PL-8: llave de IA por negocio", () => {
   });
   it("DELETE revoca solo ESE negocio y lo audita", async () => {
     const res = await DELETE(request(), ctx); expect(res.status).toBe(200);
-    expect(m.del).toHaveBeenCalledWith("otro-negocio");
+    expect(m.del).toHaveBeenCalledWith("otro-negocio", tx);
     expect(m.audit).toHaveBeenCalledWith({ actorUserId: "superadmin", action: "ai_key.revoke", organizationId: "otro-negocio",
-      targetUserId: null, detail: { scope: "org" } });
+      targetUserId: null, detail: { scope: "org" } }, tx);
     expect((await res.json()).configurada).toBe(false);
   });
   it.each([true, false])("sonda usa token escrito (%s) o guardado sin guardar ni auditar", async (escrito) => {

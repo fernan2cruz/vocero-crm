@@ -1,5 +1,6 @@
 import { readMediaFile } from "@/server/whatsapp/media";
-import { getBrandingContext } from "@/server/branding";
+import { getRequestBrandingContext } from "@/server/branding";
+import { plataformaEnabled } from "@/server/platform/flag";
 import { DEFAULT_BRANDING } from "@/lib/branding";
 import { FAVICON_ASSET, generatedFaviconSvg } from "@/lib/favicon";
 
@@ -20,7 +21,7 @@ function cabeceras(mime: string, cacheable: boolean): HeadersInit {
     "x-content-type-options": "nosniff",
     // La URL lleva `?v=` y cambia con la marca, así que se puede cachear
     // fuerte. Sin ese sufijo —alguien pidiendo la ruta pelada— no.
-    "cache-control": cacheable
+    "cache-control": plataformaEnabled() ? "private, no-store" : cacheable
       ? "public, max-age=31536000, immutable"
       : "public, max-age=60",
   };
@@ -35,7 +36,7 @@ function cabeceras(mime: string, cacheable: boolean): HeadersInit {
 export async function GET(req: Request) {
   const cacheable = new URL(req.url).searchParams.has("v");
 
-  const ctx = await getBrandingContext().catch(() => null);
+  const ctx = await getRequestBrandingContext().catch(() => null);
   const branding = ctx?.branding ?? DEFAULT_BRANDING;
 
   if (ctx?.organizationId && branding.favicon) {

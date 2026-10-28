@@ -42,6 +42,15 @@ function isInternalSignup(): boolean {
 }
 
 const RATE_LIMITED_PATHS = new Set(["/sign-in/email", "/sign-up/email"]);
+// El equipo y el ciclo de vida del negocio los gobierna el portal. Las
+// lecturas y la selección de organización conservan el contrato de Better Auth.
+const ORGANIZATION_ALLOWED_PATHS = new Set([
+  "/organization/set-active", "/organization/list", "/organization/get-full-organization",
+  "/organization/get-active-member", "/organization/get-active-member-role",
+  "/organization/list-members", "/organization/list-invitations",
+  "/organization/get-invitation", "/organization/list-user-invitations",
+  "/organization/has-permission", "/organization/check-slug",
+]);
 
 function createAuth() {
   const env = getEnv();
@@ -68,6 +77,12 @@ function createAuth() {
     plugins: [organization({ creatorRole: "owner" })],
     hooks: {
       before: createAuthMiddleware(async (ctx) => {
+        if (plataformaEnabled() && ctx.path.startsWith("/organization/") &&
+            !ORGANIZATION_ALLOWED_PATHS.has(ctx.path)) {
+          throw new APIError("FORBIDDEN", {
+            code: "gestionado_por_plataforma", message: "Lo administra la plataforma",
+          });
+        }
         // Rate limit por IP en login/registro (FR-062): 10 / 10 min → 429.
         if (RATE_LIMITED_PATHS.has(ctx.path)) {
           const ip = clientIp(ctx.headers);

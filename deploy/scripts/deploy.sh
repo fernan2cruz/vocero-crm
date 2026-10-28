@@ -10,7 +10,13 @@ cd "$(dirname "$0")/.."
 
 MODE=pull
 if [ "${1:-}" = "--build" ]; then MODE=build; shift; fi
-NEW_TAG=${1:?uso: deploy.sh [--build] <etiqueta-de-imagen>}
+if [ "${1:-}" = "--rollback" ]; then MODE=rollback; shift; fi
+if [ "$MODE" = rollback ]; then
+  NEW_TAG=$(cat .previous_tag 2>/dev/null || true)
+  [ -n "$NEW_TAG" ] || { echo "no hay etiqueta previa guardada" >&2; exit 1; }
+else
+  NEW_TAG=${1:?uso: deploy.sh [--build] <etiqueta-de-imagen> | --rollback}
+fi
 COMPOSE="docker compose -f docker-compose.prod.yml"
 STATE=.deployed_tag
 HEALTH_TIMEOUT=${HEALTH_TIMEOUT:-240}
@@ -55,10 +61,16 @@ if [ "$MODE" = build ]; then
   IMAGE_TAG="$NEW_TAG" $COMPOSE build app backup
 fi
 set_tag "$NEW_TAG"
-[ "$MODE" = build ] || $COMPOSE pull app
-$COMPOSE up -d --remove-orphans
+desplegar() {
+  if [ "$MODE" = pull ]; then
+    $COMPOSE pull app || return 1
+  fi
+  $COMPOSE up -d --no-build --remove-orphans || return 1
+  wait_healthy
+}
 
-if wait_healthy; then
+if desplegar; then
+  if [ -n "$PREV_TAG" ] && [ "$PREV_TAG" != "$NEW_TAG" ]; then echo "$PREV_TAG" > .previous_tag; fi
   echo "$NEW_TAG" > "$STATE"
   echo "== sano; despliegue de $NEW_TAG completo"
   docker image prune -f >/dev/null 2>&1 || true
@@ -75,9 +87,7 @@ $COMPOSE logs --tail=60 app >&2 || true
 if [ -n "$PREV_TAG" ] && [ "$PREV_TAG" != "$NEW_TAG" ]; then
   echo "== revirtiendo a $PREV_TAG" >&2
   set_tag "$PREV_TAG"
-  [ "$MODE" = build ] || $COMPOSE pull app || true
-  $COMPOSE up -d --remove-orphans
-  if wait_healthy; then echo "== reversión a $PREV_TAG exitosa" >&2; else echo "== LA REVERSIÓN TAMBIÉN FALLÓ: intervención manual" >&2; fi
+  if $COMPOSE up -d --no-build --remove-orphans && wait_healthy; then echo "== reversión a $PREV_TAG exitosa" >&2; else echo "== LA REVERSIÓN TAMBIÉN FALLÓ: intervención manual" >&2; fi
 else
   echo "== primer despliegue: no hay versión previa; se deja como está para inspeccionar (docker compose -f docker-compose.prod.yml logs)" >&2
 fi

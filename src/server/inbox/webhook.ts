@@ -1,4 +1,10 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { plataformaEnabled } from "@/server/platform/flag";
+
+/** En una plataforma compartida, la URL secreta no autentica al emisor. */
+export function metaSignatureUnavailable(appSecret: string | undefined): boolean {
+  return plataformaEnabled() && !appSecret;
+}
 
 /**
  * Autenticación en dos capas del webhook (contrato webhook.md / DV-VC-02).
@@ -21,15 +27,15 @@ export function isValidWebhookToken(
 }
 
 /**
- * Capa 2 (opcional): firma HMAC-SHA256 de Meta sobre el body CRUDO.
- * Devuelve true si no hay secreto configurado (capa desactivada).
+ * Capa 2: firma HMAC-SHA256 de Meta sobre el body CRUDO.
+ * Sin plataforma conserva la firma opcional; con plataforma falla sin secreto.
  */
 export function isValidSignature(
   rawBody: string,
   signatureHeader: string | null,
   appSecret: string | undefined
 ): boolean {
-  if (!appSecret) return true;
+  if (!appSecret) return !plataformaEnabled();
   if (!signatureHeader?.startsWith("sha256=")) return false;
   const expected = createHmac("sha256", appSecret)
     .update(rawBody, "utf8")

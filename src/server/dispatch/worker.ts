@@ -1,5 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
+import { plataformaEnabled } from "@/server/platform/flag";
+import { estadoDeNegocio } from "@/server/platform/estado";
 import { leerConfigDespacho } from "@/server/brains/config";
 import {
   construirEvento,
@@ -210,6 +212,11 @@ async function procesar(fila: FilaDespacho): Promise<void> {
     return;
   }
 
+  if (plataformaEnabled() && await estadoDeNegocio(fila.organizationId) === "suspended") {
+    // Como una pausa de la IA: omitir el turno, sin gastar intentos ni entregar al cerebro.
+    await descartarDespacho(fila, "negocio_suspendido");
+    return;
+  }
   const resultado = await entregar(evento, config);
   // El lease pudo vencer mientras se esperaba al cerebro y otro pudo retomar
   // la fila: si ya no es nuestra, lo que hagamos aquí pisaría su trabajo.

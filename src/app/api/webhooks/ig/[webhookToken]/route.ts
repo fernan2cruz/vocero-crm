@@ -1,5 +1,5 @@
 import { getEnv } from "@/lib/env";
-import { isValidSignature, isValidWebhookToken } from "@/server/inbox/webhook";
+import { isValidSignature, isValidWebhookToken, metaSignatureUnavailable } from "@/server/inbox/webhook";
 import {
   channelDisabledResponse,
   isChannelEnabled,
@@ -65,6 +65,7 @@ export async function POST(req: Request, { params }: Params) {
     (payload as { object?: string }).object === "instagram";
 
   if (isMeta) {
+    if (metaSignatureUnavailable(env.META_APP_SECRET)) return new Response(null, { status: 503 });
     // Meta firma cada entrega con el App Secret, igual que en WhatsApp. Sin
     // esta capa, quien conozca la URL secreta puede inyectar DMs falsos: el
     // agente los contestaria enviando un DM REAL desde la cuenta del cliente

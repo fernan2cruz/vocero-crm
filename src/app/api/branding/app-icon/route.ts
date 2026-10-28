@@ -1,5 +1,6 @@
 import { parseAppIconParams } from "@/lib/pwa";
 import { appIconResponse } from "@/server/app-icon";
+import { plataformaEnabled } from "@/server/platform/flag";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,7 @@ export async function GET(req: Request) {
   // Con `?v=` la URL cambia con la marca: se puede cachear fuerte.
   headers.set(
     "cache-control",
-    url.searchParams.has("v") ? "public, max-age=31536000, immutable" : "public, max-age=60"
+    plataformaEnabled() ? "private, no-store" : url.searchParams.has("v") ? "public, max-age=31536000, immutable" : "public, max-age=60"
   );
   return new Response(imagen.body, { status: 200, headers });
 }

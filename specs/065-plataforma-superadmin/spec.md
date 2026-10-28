@@ -269,6 +269,25 @@ Postgres real y la imagen Docker con `PLATAFORMA=on`):
   `docs/plataforma-cerebro.md`. El código vive en `nea-agent/`, que es
   una copia local sin versionar en este repositorio.
 
+**Revisión exhaustiva independiente (Codex, 14 hallazgos; todos verificados por Claude leyendo el código).**
+Corregidos y verificados en vivo contra Postgres real (22 verificaciones sobre el stack de `deploy/`): endpoints
+nativos de Better Auth que eludían la plataforma; webhook de Meta sin firma (con la plataforma encendida
+exige `META_APP_SECRET`, responde 503 sin él y no entrega el token a los negocios); SSE que no se cerraba al
+revocar (revalida cada ~30 s); alta de personal para negocios gestionados (`POST /api/platform/users`); marca del
+primer negocio aplicada globalmente; reversión de `deploy.sh` (ahora también `--rollback`, probado con Docker real);
+scripts sin permiso de ejecución. Corregidos con pruebas unitarias (base simulada, sin prueba en vivo): campaña
+ejecutada dos veces en paralelo (reclamo atómico), suspensión que no detenía campañas ni despachos, auditoría de
+llaves fuera de transacción, contactos archivados que desplazaban a los activos, y retención de accesos y de
+despachos de Nea.
+
+**Limitaciones conocidas que NO se corrigieron (decisión consciente):**
+- **El Laboratorio puede contar y bloquearse como producción en el proxy de IA.** Los turnos de prueba pasan por
+  Nea y llegan a `/api/bot/llm` como `bot`. Arreglarlo exige que Nea envíe una referencia verificable de la
+  conversación. Mientras tanto, el gasto del Laboratorio que pasa por Nea cuenta para el tope mensual.
+- **Los envíos diferidos de Nea no tienen reclamo exclusivo ni idempotencia.** Solo importa con más de una réplica
+  de Nea (el piloto usa una) o si se pierde una respuesta HTTP tras aceptar el envío.
+- **Los destinatarios en `sending` tras una caída del proceso no se reintentan solos** (evita duplicar mensajes).
+
 **Pendiente, de más a menos urgente**
 
 1. **Seguridad del superadmin (S6)**: pedir de nuevo la contraseña en acciones

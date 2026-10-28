@@ -12,6 +12,7 @@ import { formatoFecha } from "@/lib/platform-ui";
 import { InsigniaEstado } from "./insignia-estado";
 import { ConfirmarConMotivo } from "./confirmar-con-motivo";
 import { ListaUsuarios, type UsuarioPortal } from "./lista-usuarios";
+import { AgregarUsuario } from "./agregar-usuario";
 import { mensajeError, peticion } from "./peticion";
 import { CreditoNegocio, type CreditoNegocioProps } from "./credito-negocio";
 import { LlaveIa, type VistaLlave } from "./llave-ia";
@@ -58,7 +59,7 @@ export function NegocioClient({ negocio, usuarios, credito, llave, informes, ses
     <LimitesNegocio id={negocio.id} limites={limites} uso={uso} />
     {informes}
     <LlaveIa titulo="Llave de IA del negocio" ruta={`${ruta}/ai-key`} inicial={llave} revocable />
-    <section className="space-y-3"><h2 className="text-lg font-semibold">Usuarios del negocio</h2>{sesiones}<Link className="block text-sm text-primary underline" href={`/platform/accesos?organizationId=${encodeURIComponent(negocio.id)}#sesiones`}>Ver accesos del negocio</Link><ListaUsuarios usuarios={usuarios} /></section>
+    <section className="space-y-3"><h2 className="text-lg font-semibold">Usuarios del negocio</h2><AgregarUsuario organizationId={negocio.id} />{sesiones}<Link className="block text-sm text-primary underline" href={`/platform/accesos?organizationId=${encodeURIComponent(negocio.id)}#sesiones`}>Ver accesos del negocio</Link><ListaUsuarios usuarios={usuarios} /></section>
     {confirmando && <ConfirmarConMotivo titulo={suspendido ? "Reactivar" : "Suspender"} conMotivo={!suspendido}
       descripcion={suspendido ? `Se restablecerá el acceso a ${negocio.name}.` : `Se suspenderá ${negocio.name} y se cerrarán las sesiones de sus usuarios.`}
       onCerrar={() => setConfirmando(false)} onConfirmar={async (motivo) => {

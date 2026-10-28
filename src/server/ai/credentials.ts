@@ -30,6 +30,7 @@ export type AiCredentialPublic = {
 export type AiCredentialSecret = AiCredentialPublic & { token: string };
 
 type Row = typeof schema.aiCredentials.$inferSelect;
+type Transaction = Parameters<Parameters<ReturnType<typeof getDb>["transaction"]>[0]>[0];
 
 function toPublic(row: Row): AiCredentialPublic {
   return {
@@ -107,8 +108,8 @@ export async function saveAiCredential(input: {
   baseUrl: string;
   model: string;
   token?: string;
-}): Promise<AiCredentialPublic> {
-  const db = getDb();
+}, tx?: Transaction): Promise<AiCredentialPublic> {
+  const db = tx ?? getDb();
   const now = new Date();
 
   if (input.token === undefined) {
@@ -158,8 +159,8 @@ export async function saveAiCredential(input: {
   return toPublic(row);
 }
 
-export async function deleteAiCredential(organizationId: string): Promise<void> {
-  const db = getDb();
+export async function deleteAiCredential(organizationId: string, tx?: Transaction): Promise<void> {
+  const db = tx ?? getDb();
   await db
     .delete(schema.aiCredentials)
     .where(scoped(schema.aiCredentials.organizationId, organizationId));

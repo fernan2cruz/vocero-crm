@@ -1556,7 +1556,7 @@ export const campaignRecipient = pgTable(
       .notNull()
       .references(() => contact.id, { onDelete: "cascade" }),
     status: text("status", {
-      enum: ["pending", "sent", "failed", "skipped"],
+      enum: ["pending", "sending", "sent", "failed", "skipped"],
     })
       .notNull()
       .default("pending"),

@@ -1,4 +1,5 @@
 import { apiError, parseBody } from "@/lib/api";
+import { getDb } from "@/lib/db";
 import { probeProvider } from "@/lib/ai/probe";
 import { AiCredentialError, deleteAiCredential, getAiCredentialPublic, saveAiCredential } from "@/server/ai/credentials";
 import { aiProbeSchema, aiSettingsPutSchema, baseUrlEfectiva, llaveParaProbar, vistaLlaveIa } from "@/server/ai/settings";
@@ -24,10 +25,13 @@ export async function guardarLlaveNegocio(organizationId: string, actorUserId: s
   const body = await parseBody(req, aiSettingsPutSchema);
   if (!body.ok) return body.response;
   try {
-    const cred = await saveAiCredential({ organizationId, ...body.data,
-      baseUrl: baseUrlEfectiva(body.data.provider, body.data.baseUrl) });
-    await auditar({ actorUserId, action: "ai_key.set", organizationId,
-      targetUserId: null, detail: { scope: "org", provider: cred.provider, model: cred.model, last4: cred.tokenLast4 } });
+    const cred = await getDb().transaction(async (tx) => {
+      const cred = await saveAiCredential({ organizationId, ...body.data,
+        baseUrl: baseUrlEfectiva(body.data.provider, body.data.baseUrl) }, tx);
+      await auditar({ actorUserId, action: "ai_key.set", organizationId,
+        targetUserId: null, detail: { scope: "org", provider: cred.provider, model: cred.model, last4: cred.tokenLast4 } }, tx);
+      return cred;
+    });
     return Response.json(vistaLlaveIa(cred));
   } catch (error) {
     if (error instanceof AiCredentialError) return apiError(422, error.code, error.message);
@@ -38,9 +42,11 @@ export async function guardarLlaveNegocio(organizationId: string, actorUserId: s
 
 export async function revocarLlaveNegocio(organizationId: string, actorUserId: string): Promise<Response> {
   if (!(await obtenerNegocio(organizationId))) return apiError(404, "not_found", "Negocio no encontrado");
-  await deleteAiCredential(organizationId);
-  await auditar({ actorUserId, action: "ai_key.revoke", organizationId,
-    targetUserId: null, detail: { scope: "org" } });
+  await getDb().transaction(async (tx) => {
+    await deleteAiCredential(organizationId, tx);
+    await auditar({ actorUserId, action: "ai_key.revoke", organizationId,
+      targetUserId: null, detail: { scope: "org" } }, tx);
+  });
   return Response.json(vistaLlaveIa(null));
 }
 

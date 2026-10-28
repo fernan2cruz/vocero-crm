@@ -1,4 +1,6 @@
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
+import { plataformaEnabled } from "@/server/platform/flag";
+import { getSessionOrNull } from "@/lib/auth/session";
 import { getDb, schema } from "@/lib/db";
 import {
   DEFAULT_BRANDING,
@@ -30,6 +32,9 @@ function parseMetadata(metadata: string | null): Record<string, unknown> {
 export async function getBrandingContext(
   organizationId?: string | null
 ): Promise<{ organizationId: string | null; branding: Branding }> {
+  if (plataformaEnabled() && !organizationId) {
+    return { organizationId: null, branding: DEFAULT_BRANDING };
+  }
   const db = getDb();
   const rows = organizationId
     ? await db
@@ -41,6 +46,7 @@ export async function getBrandingContext(
       await db
         .select({ id: schema.organization.id, metadata: schema.organization.metadata })
         .from(schema.organization)
+        .orderBy(asc(schema.organization.id))
         .limit(1);
   if (!rows[0]) return { organizationId: null, branding: DEFAULT_BRANDING };
   const meta = parseMetadata(rows[0].metadata);
@@ -50,6 +56,17 @@ export async function getBrandingContext(
       (meta.branding as Partial<Branding> | undefined) ?? null
     ),
   };
+}
+
+/** Superficies compartidas: la sesión decide la marca; sin ella, plataforma. */
+export async function getRequestBrandingContext() {
+  if (!plataformaEnabled()) return getBrandingContext();
+  const session = await getSessionOrNull();
+  return getBrandingContext(session?.organizationId);
+}
+
+export async function getRequestBranding(): Promise<Branding> {
+  return (await getRequestBrandingContext()).branding;
 }
 
 export async function getBranding(
