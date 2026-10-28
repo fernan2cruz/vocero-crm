@@ -160,3 +160,22 @@ docker run --rm -v wassapi-pilot_backups:/b:ro -v "$PWD":/o alpine tar czf /o/re
   a la marca WhatsApp de Meta, y conviene verificarlo antes de invertir en marca.
 - Pendientes de seguridad del portal (reconfirmar contraseña en acciones destructivas, 2FA, lista de IPs permitidas):
   ver `specs/065-plataforma-superadmin/spec.md`.
+
+## 10. Despliegue desde GitHub Actions (runner en el servidor)
+
+El workflow `.github/workflows/deploy.yml` despliega desde el runner autoalojado del propio servidor. Se lanza a mano
+(Actions → Deploy → Run workflow) y solo desde `main`.
+
+Preparación única en el servidor (usuario del runner, que debe estar en el grupo `docker`):
+
+```bash
+sudo dnf -y install rsync
+sudo mkdir -p /opt/vocerocrm && sudo chown "$USER": /opt/vocerocrm
+```
+
+En GitHub (Settings → Secrets and variables → Actions) crea el secreto `CLOUDFLARE_TUNNEL_TOKEN` con el token del
+túnel. En el panel de Cloudflare el hostname apunta a `https://caddy:443` con «No TLS Verify».
+
+La primera ejecución pide el input `domain` y crea `deploy/.env` con los secretos generados en el servidor, la Nea del
+fork (`ghcr.io/fernan2cruz/nea-agent`) y el túnel activado. Las siguientes no tocan el `.env`. Guarda una copia aparte.
+Después sigue el paso 3 (primer superadmin).

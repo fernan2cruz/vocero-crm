@@ -1,0 +1,87 @@
+name: Deploy (servidor piloto)
+
+# Despliegue manual al servidor piloto, en el runner autoalojado instalado en el propio servidor
+# (mismo esquema que DomiaX). Se lanza a mano (Actions -> Deploy -> Run workflow) desde main: el portal
+# de superadmin gobierna a todos los negocios y no se despliega solo con cada push.
+#
+# Servidor:  /opt/vocerocrm  (espejo del repositorio)  y  /opt/vocerocrm/deploy/.env  (nunca en git, nunca se sobreescribe).
+# deploy.sh: respaldo previo (se omite la primera vez) -> build -> up -> espera /api/health -> reversión automática si no queda sano.
+#
+# La PRIMERA vez, si deploy/.env no existe, se crea con gen-env.sh (secretos generados en el servidor, nunca impresos)
+# usando el dominio del input `domain`. Con el secreto CLOUDFLARE_TUNNEL_TOKEN se activa el túnel (sin puertos publicados).
+on:
+  workflow_dispatch:
+    inputs:
+      domain:
+        description: "Dominio público (solo se usa si deploy/.env aún no existe), p. ej. crm.tudominio.com"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  DEPLOY_PATH: /opt/vocerocrm
+
+jobs:
+  deploy:
+    name: Deploy (self-hosted)
+    # Una ejecución manual puede elegir cualquier rama, y el checkout (y con él deploy.sh) sale de ese ref:
+    # solo main, la rama revisada, llega al servidor.
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, linux, x64]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with: { persist-credentials: false }
+
+      - name: Sincronizar el árbol en el servidor (nunca .env ni los marcadores de versión)
+        run: |
+          command -v rsync >/dev/null || { echo "falta rsync en el servidor: sudo dnf -y install rsync" >&2; exit 1; }
+          test -w "$DEPLOY_PATH" || { echo "$DEPLOY_PATH no existe o no es escribible por este usuario: sudo mkdir -p $DEPLOY_PATH && sudo chown $(id -un): $DEPLOY_PATH" >&2; exit 1; }
+          rsync -a --delete \
+            --exclude '.git/' --exclude 'node_modules/' --exclude '.next/' --exclude 'nea-agent/' \
+            --exclude 'deploy/.env' --exclude 'deploy/.deployed_tag' --exclude 'deploy/.previous_tag' \
+            ./ "$DEPLOY_PATH/"
+
+      - name: Crear deploy/.env si no existe (solo la primera vez)
+        env:
+          DOMAIN_IN: ${{ inputs.domain }}
+          TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+        run: |
+          cd "$DEPLOY_PATH/deploy"
+          if [ -f .env ]; then echo "deploy/.env ya existe: no se toca"; exit 0; fi
+          printf '%s' "$DOMAIN_IN" | grep -Eq '^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$' \
+            || { echo "primer despliegue: indica el input 'domain' (p. ej. crm.tudominio.com)" >&2; exit 1; }
+          sh scripts/gen-env.sh "$DOMAIN_IN" >/dev/null
+          setv() { sed -i "s|^$1=.*|$1=$2|" .env; }
+          # La Nea del fork (multi-negocio) publicada en GHCR.
+          setv NEA_IMAGE ghcr.io/fernan2cruz/nea-agent
+          setv NEA_VERSION 2.1.0
+          setv NEA_VOCERO_MODE cloud
+          setv NEA_CRM_SURFACE bot
+          if [ -n "$TUNNEL_TOKEN" ]; then
+            setv CADDY_TLS "tls internal"
+            setv BIND_ADDR 127.0.0.1
+            setv CLOUDFLARE_TUNNEL_TOKEN "$TUNNEL_TOKEN"
+            echo "COMPOSE_PROFILES=tunnel" >> .env
+            echo "túnel de Cloudflare activado"
+          else
+            echo "sin CLOUDFLARE_TUNNEL_TOKEN: Caddy publica 80/443 con Let's Encrypt" >&2
+          fi
+          chmod 600 .env
+          echo "deploy/.env creado. GUARDA UNA COPIA APARTE: ENCRYPTION_KEY cifra los secretos de la base."
+
+      - name: Desplegar (build, arranque, /api/health y reversión sola si falla)
+        run: |
+          cd "$DEPLOY_PATH/deploy"
+          sh scripts/deploy.sh --build "${GITHUB_SHA::12}"
+
+      - name: Estado final
+        if: always()
+        run: |
+          cd "$DEPLOY_PATH/deploy"
+          docker compose -f docker-compose.prod.yml ps || true
