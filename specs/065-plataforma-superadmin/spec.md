@@ -249,9 +249,16 @@ Postgres real y la imagen Docker con `PLATAFORMA=on`):
   pausaba solo (402 `sin_saldo` → conversación a una persona).
 - A (Nea multi-negocio por `/api/bot/*`): Nea ya sabe hablar con este CRM con
   `CRM_SURFACE=bot` (credencial derivada + id del negocio en la cabecera; piensa por
-  `/api/bot/llm`, nunca con una llave propia). Verificado: pytest de Nea 543 OK, 30
-  omitidas, y el vector de la credencial coincide con el del CRM. NO verificado: una
-  conversación de punta a punta entre Nea y este CRM con dos negocios. Ver
+  `/api/bot/llm`, nunca con una llave propia). Verificado: pytest de Nea 547 OK, 30
+  omitidas, el vector de la credencial coincide con el del CRM, y una prueba de punta a
+  punta con DOS negocios sobre el stack de `deploy/` (29 verificaciones: respuesta por el
+  número y el agente correctos, conversaciones separadas, consumo y crédito por negocio,
+  llave heredada con 2 negocios -> 409, credencial cruzada -> 401, negocio suspendido
+  deja de contestar). Vecino ruidoso: el worker de Nea atendía un despacho a la vez para
+  TODOS los negocios; ahora `DISPATCH_WORKERS` (4 por defecto) atiende a negocios
+  distintos a la vez (un negocio, como máximo uno) y el orden de atención es por
+  antigüedad. Medido con un modelo de 3 s: un negocio en medio de una ráfaga de 12 de
+  otro pasó de 13.9 s a 4.8 s. Ver
   `docs/plataforma-cerebro.md`. El código vive en `nea-agent/`, que es
   una copia local sin versionar en este repositorio.
 

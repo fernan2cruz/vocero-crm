@@ -94,6 +94,7 @@ services:
       META_WEBHOOK_VERIFY_TOKEN: ${META_WEBHOOK_VERIFY_TOKEN:?define META_WEBHOOK_VERIFY_TOKEN}
       META_APP_SECRET: ${META_APP_SECRET:-}
       META_GRAPH_API_VERSION: ${META_GRAPH_API_VERSION:-v25.0}
+      META_GRAPH_BASE_URL: ${META_GRAPH_BASE_URL:-https://graph.facebook.com}   # solo se cambia para pruebas con un API falso
       OPENROUTER_API_TOKEN: ${OPENROUTER_API_TOKEN:-}
       OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api}
       OPENROUTER_MODEL: ${OPENROUTER_MODEL:-}
@@ -137,6 +138,9 @@ services:
       ALLOWED_WA_IDS: ${ALLOWED_WA_IDS:-}
       VOCERO_MODE: ${NEA_VOCERO_MODE:-}
       CRM_SURFACE: ${NEA_CRM_SURFACE:-}
+      # Despachos que se atienden a la vez (de negocios distintos; un negocio nunca ocupa más de uno).
+      # Solo lo entiende la Nea del fork; la oficial lo ignora.
+      DISPATCH_WORKERS: ${NEA_DISPATCH_WORKERS:-4}
     networks: [app, data]
     depends_on:
       postgres: { condition: service_healthy }

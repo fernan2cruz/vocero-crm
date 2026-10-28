@@ -73,8 +73,13 @@ La URL del webhook de cada número en Meta es `https://crm.tudominio.com/api/web
 - Con la imagen oficial de Nea (`NEA_IMAGE` por defecto) la plataforma sirve **un solo negocio** con agente.
 - Para varios negocios con agente, construye la Nea del fork y define en `.env`:
   `NEA_IMAGE=wassapi-nea`, `NEA_VERSION=1`, `NEA_VOCERO_MODE=cloud`, `NEA_CRM_SURFACE=bot`.
-  Esta ruta está probada con pruebas unitarias, pero **no de punta a punta con dos negocios**: pruébala en el piloto
-  antes de dar un segundo negocio a un cliente.
+  Probado de punta a punta con dos negocios sobre este mismo stack (29 verificaciones): cada negocio contesta por
+  su número y con su agente, el mismo cliente tiene una conversación por negocio, el consumo y el crédito se cargan
+  a quien corresponde, una credencial no sirve con otro negocio y un negocio suspendido deja de contestar.
+- `NEA_DISPATCH_WORKERS` (por defecto 4): cuántos despachos atiende Nea a la vez. Un negocio nunca ocupa más de uno
+  (sus mensajes salen en orden) y los demás atienden a otros, así que la ráfaga de un cliente no deja esperando al
+  resto. Con un modelo de 3 s por respuesta, un negocio en medio de una ráfaga de 12 de otro pasó de esperar 13.9 s a
+  4.8 s. Súbelo si tienes muchos negocios activos a la vez.
 
 ## 6. Operación
 
